@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>予算管理</title>
+<style>
+  :root{
+    --bg:#F7F5F0;
+    --surface:#FFFFFF;
+    --text:#1F2937;
+    --text-sub:#6B7280;
+    --border:#E5E1D8;
+    --accent:#2D6A4F;
+    --accent-soft:#E3EFE9;
+    --warn:#D97706;
+    --warn-soft:#FBEEDC;
+    --danger:#DC2626;
+    --danger-soft:#FBE3E1;
+    --radius:14px;
+    --nav-h:64px;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body{
+    min-height:100vh;
+    padding-bottom:calc(var(--nav-h) + 16px);
+  }
+  .num{ font-variant-numeric: tabular-nums; font-feature-settings:"tnum"; }
+
+  /* ===== レイアウト枠 ===== */
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--bg);
+    position:relative;
+  }
+  @media (min-width:640px){
+    #app{
+      max-width:560px;
+      margin-top:24px;
+      min-height:calc(100vh - 48px);
+      border-radius:24px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.04), 0 12px 32px rgba(31,41,55,0.06);
+      overflow:hidden;
+      border:1px solid var(--border);
+    }
+  }
+
+  header.topbar{
+    padding:20px 20px 14px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:8px;
+  }
+  header.topbar h1{
+    font-size:17px;
+    font-weight:700;
+    margin:0;
+    letter-spacing:0.01em;
+  }
+  header.topbar .proj-period{
+    font-size:12px;
+    color:var(--text-sub);
+  }
+  .topbar-proj-btn{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    color:var(--text);
+    font-family:inherit;
+    min-width:0;
+  }
+  .topbar-proj-btn h1{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .topbar-proj-btn svg{ flex-shrink:0; color:var(--text-sub); }
+
+  main{
+    padding:0 20px 20px;
+  }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  /* ===== 下部ナビ ===== */
+  nav.bottomnav{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    max-width:520px;
+    margin:0 auto;
+    height:var(--nav-h);
+    background:var(--surface);
+    border-top:1px solid var(--border);
+    display:flex;
+    z-index:50;
+  }
+  @media (min-width:640px){
+    nav.bottomnav{ max-width:560px; }
+  }
+  nav.bottomnav button{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    background:none;
+    border:none;
+    color:var(--text-sub);
+    font-size:11px;
+    font-family:inherit;
+    cursor:pointer;
+    padding:6px 0 8px;
+  }
+  nav.bottomnav button .icon{
+    width:22px;height:22px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  nav.bottomnav button svg{ width:21px; height:21px; }
+  nav.bottomnav button.active{ color:var(--accent); }
+  nav.bottomnav button.active svg{ stroke:var(--accent); }
+
+  /* ===== カード共通 ===== */
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+  }
+  .card + .card{ margin-top:14px; }
+  .card h2{
+    font-size:13px;
+    font-weight:700;
+    color:var(--text-sub);
+    margin:0 0 12px;
+    letter-spacing:0.03em;
+  }
+
+  /* ===== フォーム共通 ===== */
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-sub);
+    margin:14px 0 6px;
+  }
+  label:first-child{ margin-top:0; }
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%;
+    padding:11px 12px;
+    font-size:15px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:var(--bg);
+    color:var(--text);
+    font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:2px solid var(--accent);
+    outline-offset:1px;
+    background:var(--surface);
+  }
+  .field-row{ display:flex; gap:10px; }
+  .field-row > div{ flex:1; }
+
+  button.btn{
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    border-radius:10px;
+    border:none;
+    padding:13px 18px;
+    cursor:pointer;
+  }
+  button.btn-primary{
+    background:var(--accent);
+    color:#fff;
+    width:100%;
+    margin-top:18px;
+  }
+  button.btn-primary:active{ opacity:0.85; }
+
+  /* ===== 初回オンボーディング ===== */
+  #onboarding{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:32px 24px;
+  }
+  #onboarding .lead{
+    margin-bottom:24px;
+  }
+  #onboarding .lead .eyebrow{
+    font-size:12px;
+    font-weight:700;
+    color:var(--accent);
+    letter-spacing:0.08em;
+    margin-bottom:6px;
+  }
+  #onboarding .lead h1{
+    font-size:22px;
+    margin:0 0 8px;
+    line-height:1.4;
+  }
+  #onboarding .lead p{
+    font-size:13px;
+    color:var(--text-sub);
+    margin:0;
+    line-height:1.6;
+  }
+
+  .empty-hint{
+    font-size:12px;
+    color:var(--text-sub);
+    text-align:center;
+    padding:24px 8px;
+  }
+
+  .placeholder-screen{
+    padding:60px 0;
+    text-align:center;
+    color:var(--text-sub);
+    font-size:13px;
+  }
+
+  /* ===== カテゴリチップ ===== */
+  .chip-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--accent-soft);
+    color:var(--accent);
+    font-size:13px;
+    font-weight:600;
+    padding:7px 8px 7px 12px;
+    border-radius:999px;
+  }
+  .chip button{
+    background:none;
+    border:none;
+    color:var(--accent);
+    opacity:0.6;
+    cursor:pointer;
+    font-size:14px;
+    line-height:1;
+    padding:2px;
+    font-family:inherit;
+  }
+  .chip button:hover{ opacity:1; }
+  .chip.edit-mode{ padding-right:6px; }
+  .chip input[type=text]{
+    border:none;
+    background:none;
+    padding:0;
+    font-size:13px;
+    font-weight:600;
+    color:var(--accent);
+    width:88px;
+  }
+  .chip input[type=text]:focus{ outline:none; background:none; }
+
+  .add-chip-row{
+    display:flex;
+    gap:8px;
+    margin-top:12px;
+  }
+  .add-chip-row input{ flex:1; }
+  .add-chip-row button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:0 16px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+
+  /* ===== 支出記録: フォーム ===== */
+  select{
+    -webkit-appearance:none;
+    appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-repeat:no-repeat;
+    background-position:right 10px center;
+    background-size:18px;
+    padding-right:34px;
+  }
+  textarea{
+    resize:vertical;
+    min-height:54px;
+    font-size:14px;
+  }
+
+  /* ===== 支出記録: 一覧 ===== */
+  .filter-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:14px;
+  }
+  .filter-row select{ flex:1; }
+
+  .expense-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .expense-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px 14px;
+  }
+  .expense-item .cat-dot{
+    width:8px;height:8px;
+    border-radius:50%;
+    background:var(--accent);
+    flex-shrink:0;
+  }
+  .expense-item .info{ flex:1; min-width:0; }
+  .expense-item .info .purpose{
+    font-size:14px;
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .expense-item .info .meta{
+    font-size:11.5px;
+    color:var(--text-sub);
+    margin-top:2px;
+  }
+  .expense-item .amount{
+    font-size:15px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .expense-item .row-actions{
+    display:flex;
+    gap:4px;
+  }
+  .expense-item .row-actions button{
+    background:none;
+    border:none;
+    color:var(--text-sub);
+    cursor:pointer;
+    padding:4px;
+    display:flex;
+  }
+  .expense-item .row-actions button:hover{ color:var(--text); }
+  .expense-item .row-actions button.del-btn:hover{ color:var(--danger); }
+
+  /* ===== モーダル(支出編集) ===== */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(31,41,55,0.4);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:100;
+  }
+  .modal-overlay.active{ display:flex; }
+  @media (min-width:640px){
+    .modal-overlay{ align-items:center; }
+  }
+  .modal-sheet{
+    background:var(--surface);
+    width:100%;
+    max-width:520px;
+    border-radius:18px 18px 0 0;
+    padding:20px 20px calc(20px + env(safe-area-inset-bottom));
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  @media (min-width:640px){
+    .modal-sheet{ border-radius:18px; max-height:80vh; }
+  }
+  .modal-sheet h2{
+    font-size:15px;
+    font-weight:700;
+    margin:0 0 14px;
+  }
+  .modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:18px;
+  }
+  .modal-actions button{ flex:1; margin-top:0; }
+  button.btn-secondary{
+    background:var(--bg);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+
+  /* ===== ダッシュボード: サマリー ===== */
+  .summary-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    margin-bottom:18px;
+  }
+  .summary-item .label{
+    font-size:11.5px;
+    color:var(--text-sub);
+    margin-bottom:4px;
+  }
+  .summary-item .value{
+    font-size:19px;
+    font-weight:700;
+  }
+  .summary-item.full{ grid-column:1 / -1; }
+  .summary-item .value.accent{ color:var(--accent); }
+  .summary-item .value.warn{ color:var(--warn); }
+  .summary-item .value.danger{ color:var(--danger); }
+
+  /* ===== ダッシュボード: ゲージ ===== */
+  .gauge-wrap{
+    margin-bottom:4px;
+  }
+  .gauge-track{
+    position:relative;
+    width:100%;
+    height:18px;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:999px;
+    overflow:hidden;
+  }
+  .gauge-fill{
+    height:100%;
+    border-radius:999px;
+    background:var(--accent);
+    transition:width 0.4s ease, background-color 0.4s ease;
+    width:0%;
+  }
+  .gauge-fill.warn{ background:var(--warn); }
+  .gauge-fill.danger{ background:var(--danger); }
+  .gauge-labels{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--text-sub);
+    margin-top:8px;
+  }
+  .gauge-labels .pct{
+    font-weight:700;
+    font-size:13px;
+  }
+  .gauge-labels .pct.accent{ color:var(--accent); }
+  .gauge-labels .pct.warn{ color:var(--warn); }
+  .gauge-labels .pct.danger{ color:var(--danger); }
+
+  .alert-banner{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    border-radius:12px;
+    padding:12px 14px;
+    font-size:13px;
+    font-weight:600;
+    line-height:1.5;
+    margin-top:14px;
+  }
+  .alert-banner.warn{ background:var(--warn-soft); color:#92400E; }
+  .alert-banner.danger{ background:var(--danger-soft); color:#991B1B; }
+  .alert-banner svg{ flex-shrink:0; margin-top:1px; }
+
+  /* ===== 設定: 閾値カスタマイズ ===== */
+  .threshold-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .threshold-row input{ flex:1; }
+  .threshold-row .unit{
+    font-size:13px;
+    color:var(--text-sub);
+    flex-shrink:0;
+  }
+
+  /* ===== ダッシュボード: 消化ペース ===== */
+  .pace-compare{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    margin:4px 0 14px;
+  }
+  .pace-compare .pc-item{ flex:1; text-align:center; }
+  .pace-compare .pc-item .pc-label{
+    font-size:11px;
+    color:var(--text-sub);
+    margin-bottom:4px;
+  }
+  .pace-compare .pc-item .pc-value{
+    font-size:20px;
+    font-weight:700;
+  }
+  .pace-compare .pc-divider{
+    width:1px;
+    align-self:stretch;
+    background:var(--border);
+  }
+  .pace-status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:12px;
+    font-weight:700;
+    padding:5px 12px;
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  .pace-status.ok{ background:var(--accent-soft); color:var(--accent); }
+  .pace-status.danger{ background:var(--danger-soft); color:var(--danger); }
+  .pace-status .dot{ width:6px;height:6px;border-radius:50%;background:currentColor; }
+
+  .pace-detail-row{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    padding:8px 0;
+    border-top:1px solid var(--border);
+  }
+  .pace-detail-row .k{ color:var(--text-sub); }
+  .pace-detail-row .v{ font-weight:700; }
+  .pace-detail-row .v.danger{ color:var(--danger); }
+
+  /* ===== カテゴリ別ミニゲージ ===== */
+  .cat-budget-list{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .cat-budget-row .cb-top{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    margin-bottom:5px;
+  }
+  .cat-budget-row .cb-name{ font-weight:600; }
+  .cat-budget-row .cb-amount{ color:var(--text-sub); }
+  .cat-budget-row .gauge-track{ height:8px; }
+
+  .cat-budget-setting-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 0;
+    border-top:1px solid var(--border);
+  }
+  .cat-budget-setting-row:first-child{ border-top:none; }
+  .cat-budget-setting-row .cbs-name{
+    flex:1;
+    font-size:13.5px;
+    font-weight:600;
+  }
+  .cat-budget-setting-row input{
+    width:130px;
+    flex-shrink:0;
+  }
+
+  /* ===== プロジェクト一覧 ===== */
+  .project-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .project-card{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+    cursor:pointer;
+    position:relative;
+    background:var(--bg);
+  }
+  .project-card.is-current{
+    border-color:var(--accent);
+    background:var(--accent-soft);
+  }
+  .project-card .pc-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .project-card .pc-name{
+    font-size:14.5px;
+    font-weight:700;
+  }
+  .project-card .pc-badge{
+    font-size:10.5px;
+    font-weight:700;
+    color:var(--accent);
+    background:var(--surface);
+    border-radius:999px;
+    padding:3px 9px;
+    flex-shrink:0;
+  }
+  .project-card .pc-period{
+    font-size:11.5px;
+    color:var(--text-sub);
+    margin-top:4px;
+  }
+  .project-card .pc-bottom{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:10px;
+  }
+  .project-card .pc-amounts{
+    font-size:12.5px;
+  }
+  .project-card .pc-amounts .pc-rate{
+    font-weight:700;
+  }
+  .project-card .pc-del{
+    background:none;
+    border:none;
+    color:var(--text-sub);
+    cursor:pointer;
+    padding:4px;
+    display:flex;
+  }
+  .project-card .pc-del:hover{ color:var(--danger); }
+
+  /* ===== グラフ ===== */
+  .chart-row{
+    display:flex;
+    align-items:center;
+    gap:18px;
+  }
+  #pie-chart{
+    flex-shrink:0;
+    width:140px;
+    height:140px;
+  }
+  .chart-legend{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width:0;
+  }
+  .legend-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+  }
+  .legend-row .dot{
+    width:9px;height:9px;
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  .legend-row .lg-name{
+    flex:1;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:var(--text);
+    font-weight:600;
+  }
+  .legend-row .lg-pct{
+    color:var(--text-sub);
+    flex-shrink:0;
+  }
+
+  .chart-card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+  .seg-control{
+    display:flex;
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:2px;
+  }
+  .seg-control button{
+    border:none;
+    background:none;
+    font-family:inherit;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--text-sub);
+    padding:5px 10px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+  .seg-control button.active{
+    background:var(--surface);
+    color:var(--text);
+    box-shadow:0 1px 2px rgba(0,0,0,0.06);
+  }
+  #bar-chart{
+    width:100%;
+    display:block;
+  }
+
+  /* ===== ダッシュボード: プロジェクト切替タブ ===== */
+  .proj-tab-scroll{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:4px;
+    margin-bottom:14px;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .proj-tab-scroll::-webkit-scrollbar{ display:none; }
+  .proj-tab{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text-sub);
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .proj-tab.active{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  .proj-tab .pt-add{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== 初回オンボーディング(プロジェクト未作成時) ===== -->
+  <div id="onboarding">
+    <div class="lead">
+      <div class="eyebrow">はじめに</div>
+      <h1>プロジェクトの予算を、<br>ひと目でわかるように。</h1>
+      <p>名前・期間・総予算を入力して、最初のプロジェクトを作成します。</p>
+    </div>
+
+    <div class="card">
+      <h2>プロジェクトを作成</h2>
+      <label for="onb-name">プロジェクト名 <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="onb-name" placeholder="例：オフィス改装プロジェクト">
+
+      <div class="field-row">
+        <div>
+          <label for="onb-start">開始日</label>
+          <input type="date" id="onb-start">
+        </div>
+        <div>
+          <label for="onb-end">終了日</label>
+          <input type="date" id="onb-end">
+        </div>
+      </div>
+
+      <label for="onb-budget">総予算額（円） <span style="color:var(--danger)">*</span></label>
+      <input type="number" id="onb-budget" placeholder="例：200000" min="0" step="1">
+
+      <button class="btn btn-primary" id="onb-submit">プロジェクトを作成</button>
+    </div>
+  </div>
+
+  <!-- ===== メインアプリ(プロジェクト作成後) ===== -->
+  <div id="main-app" style="display:none;">
+    <header class="topbar">
+      <button type="button" id="proj-name-display-btn" class="topbar-proj-btn">
+        <h1 id="proj-name-display">—</h1>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <span class="proj-period num" id="proj-period-display"></span>
+    </header>
+
+    <main>
+      <!-- ダッシュボード -->
+      <section class="screen active" data-screen="dashboard">
+        <div class="proj-tab-scroll" id="dashboard-proj-tabs" style="display:none;"></div>
+
+        <div class="card">
+          <h2>予算サマリー</h2>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="label">総予算</div>
+              <div class="value num" id="sum-total">¥0</div>
+            </div>
+            <div class="summary-item">
+              <div class="label">使用済み</div>
+              <div class="value num" id="sum-used">¥0</div>
+            </div>
+            <div class="summary-item">
+              <div class="label">残予算</div>
+              <div class="value num accent" id="sum-remaining">¥0</div>
+            </div>
+            <div class="summary-item">
+              <div class="label">消化率</div>
+              <div class="value num" id="sum-rate">0%</div>
+            </div>
+          </div>
+
+          <div class="gauge-wrap">
+            <div class="gauge-track">
+              <div class="gauge-fill" id="budget-gauge-fill"></div>
+            </div>
+            <div class="gauge-labels">
+              <span>予算消化率</span>
+              <span class="pct num" id="budget-gauge-pct">0%</span>
+            </div>
+          </div>
+
+          <div class="alert-banner" id="budget-alert-banner" style="display:none;"></div>
+        </div>
+
+        <div class="card" id="pie-chart-card" style="display:none;">
+          <h2>カテゴリ別支出</h2>
+          <div class="chart-row">
+            <canvas id="pie-chart" width="160" height="160"></canvas>
+            <div class="chart-legend" id="pie-legend"></div>
+          </div>
+        </div>
+
+        <div class="card" id="bar-chart-card" style="display:none;">
+          <div class="chart-card-head">
+            <h2 style="margin:0;">支出推移</h2>
+            <div class="seg-control" id="bar-period-toggle">
+              <button type="button" data-period="week" class="active">週単位</button>
+              <button type="button" data-period="month">月単位</button>
+            </div>
+          </div>
+          <canvas id="bar-chart" width="320" height="160"></canvas>
+          <div class="empty-hint" id="bar-chart-empty" style="display:none;">支出データがありません。</div>
+        </div>
+
+        <div class="card" id="pace-card" style="display:none;">
+          <h2>消化ペース</h2>
+          <div class="pace-status" id="pace-status">
+            <span class="dot"></span>
+            <span id="pace-status-text">—</span>
+          </div>
+
+          <div class="pace-compare">
+            <div class="pc-item">
+              <div class="pc-label">期間経過率</div>
+              <div class="pc-value num" id="pace-elapsed-pct">0%</div>
+            </div>
+            <div class="pc-divider"></div>
+            <div class="pc-item">
+              <div class="pc-label">予算消化率</div>
+              <div class="pc-value num" id="pace-budget-pct">0%</div>
+            </div>
+          </div>
+
+          <div class="pace-detail-row">
+            <span class="k">経過日数 / 全体</span>
+            <span class="v num" id="pace-days"></span>
+          </div>
+          <div class="pace-detail-row">
+            <span class="k">1日あたりの消化ペース</span>
+            <span class="v num" id="pace-per-day"></span>
+          </div>
+          <div class="pace-detail-row">
+            <span class="k">このペースでの着地予測額</span>
+            <span class="v num" id="pace-forecast"></span>
+          </div>
+        </div>
+
+        <div class="card" id="category-budget-card" style="display:none;">
+          <h2>カテゴリ別予算</h2>
+          <div class="cat-budget-list" id="cat-budget-list"></div>
+        </div>
+
+        <div class="card">
+          <h2>直近の支出</h2>
+          <div class="expense-list" id="dashboard-recent-list"></div>
+          <div class="empty-hint" id="dashboard-recent-empty" style="display:none;">まだ支出が記録されていません。</div>
+        </div>
+      </section>
+
+
+      <!-- 支出記録 -->
+      <section class="screen" data-screen="expenses">
+        <div class="card">
+          <h2>支出を記録</h2>
+          <div class="empty-hint" id="exp-no-category-hint" style="display:none; padding:0 0 14px;">
+            まだカテゴリが登録されていません。設定画面から先にカテゴリを追加してください。
+          </div>
+          <div class="field-row">
+            <div>
+              <label for="exp-date">日付 <span style="color:var(--danger)">*</span></label>
+              <input type="date" id="exp-date">
+            </div>
+            <div>
+              <label for="exp-amount">金額（円） <span style="color:var(--danger)">*</span></label>
+              <input type="number" id="exp-amount" min="1" step="1" placeholder="例：12000">
+            </div>
+          </div>
+
+          <label for="exp-purpose">用途 <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="exp-purpose" placeholder="例：合板材料の購入">
+
+          <label for="exp-category">カテゴリ <span style="color:var(--danger)">*</span></label>
+          <select id="exp-category"></select>
+
+          <label for="exp-memo">メモ（任意）</label>
+          <textarea id="exp-memo" placeholder="補足情報があれば入力"></textarea>
+
+          <button class="btn btn-primary" id="exp-submit">支出を登録</button>
+        </div>
+
+        <div class="card">
+          <h2>支出一覧</h2>
+          <div class="filter-row">
+            <select id="exp-filter-category">
+              <option value="">すべてのカテゴリ</option>
+            </select>
+            <select id="exp-filter-sort">
+              <option value="date-desc">日付が新しい順</option>
+              <option value="date-asc">日付が古い順</option>
+              <option value="amount-desc">金額が高い順</option>
+              <option value="amount-asc">金額が低い順</option>
+            </select>
+          </div>
+          <div class="expense-list" id="expense-list"></div>
+          <div class="empty-hint" id="expense-empty-hint" style="display:none;">まだ支出が記録されていません。</div>
+        </div>
+      </section>
+
+
+      <!-- 設定 -->
+      <section class="screen" data-screen="settings">
+        <div class="card">
+          <h2>プロジェクト設定</h2>
+          <label for="set-name">プロジェクト名</label>
+          <input type="text" id="set-name">
+          <div class="field-row">
+            <div>
+              <label for="set-start">開始日</label>
+              <input type="date" id="set-start">
+            </div>
+            <div>
+              <label for="set-end">終了日</label>
+              <input type="date" id="set-end">
+            </div>
+          </div>
+          <label for="set-budget">総予算額（円）</label>
+          <input type="number" id="set-budget" min="0" step="1">
+          <button class="btn btn-primary" id="set-save">変更を保存</button>
+        </div>
+
+        <div class="card">
+          <h2>カテゴリ管理</h2>
+          <div class="chip-list" id="category-chip-list"></div>
+          <div class="add-chip-row">
+            <input type="text" id="new-category-input" placeholder="新しいカテゴリ名">
+            <button id="add-category-btn">追加</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>警告の閾値</h2>
+          <label for="set-warn-threshold">注意の閾値（消化率）</label>
+          <div class="threshold-row">
+            <input type="number" id="set-warn-threshold" min="1" max="200" step="1">
+            <span class="unit">%</span>
+          </div>
+          <label for="set-danger-threshold">警告の閾値（消化率）</label>
+          <div class="threshold-row">
+            <input type="number" id="set-danger-threshold" min="1" max="300" step="1">
+            <span class="unit">%</span>
+          </div>
+          <button class="btn btn-primary" id="set-threshold-save">閾値を保存</button>
+        </div>
+
+        <div class="card">
+          <h2>カテゴリ別予算（任意）</h2>
+          <div class="empty-hint" id="cat-budget-empty-hint" style="display:none; padding:0 0 8px;">
+            カテゴリ管理でカテゴリを追加すると、ここで予算上限を設定できます。
+          </div>
+          <div id="cat-budget-settings-list"></div>
+          <button class="btn btn-primary" id="set-cat-budget-save" style="display:none;">カテゴリ別予算を保存</button>
+        </div>
+
+      </section>
+
+      <!-- プロジェクト一覧 -->
+      <section class="screen" data-screen="projects">
+        <div class="card">
+          <h2>新しいプロジェクトを作成</h2>
+          <label for="np-name">プロジェクト名 <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="np-name" placeholder="例：新オフィス内装工事">
+          <div class="field-row">
+            <div>
+              <label for="np-start">開始日</label>
+              <input type="date" id="np-start">
+            </div>
+            <div>
+              <label for="np-end">終了日</label>
+              <input type="date" id="np-end">
+            </div>
+          </div>
+          <label for="np-budget">総予算額（円） <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="np-budget" min="0" step="1" placeholder="例：200000">
+          <button class="btn btn-primary" id="np-submit">プロジェクトを作成</button>
+        </div>
+
+        <div class="card">
+          <h2>プロジェクト一覧</h2>
+          <div class="project-list" id="project-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ===== 下部ナビゲーション ===== -->
+  <nav class="bottomnav" id="bottomnav" style="display:none;">
+    <button data-target="dashboard" class="active">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      </span>
+      ダッシュボード
+    </button>
+    <button data-target="expenses">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+      支出記録
+    </button>
+    <button data-target="settings">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </span>
+      設定
+    </button>
+    <button data-target="projects">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>
+      </span>
+      プロジェクト
+    </button>
+  </nav>
+
+  <!-- ===== 支出編集モーダル ===== -->
+  <div class="modal-overlay" id="edit-modal-overlay">
+    <div class="modal-sheet">
+      <h2>支出を編集</h2>
+      <input type="hidden" id="edit-id">
+
+      <div class="field-row">
+        <div>
+          <label for="edit-date">日付</label>
+          <input type="date" id="edit-date">
+        </div>
+        <div>
+          <label for="edit-amount">金額（円）</label>
+          <input type="number" id="edit-amount" min="1" step="1">
+        </div>
+      </div>
+
+      <label for="edit-purpose">用途</label>
+      <input type="text" id="edit-purpose">
+
+      <label for="edit-category">カテゴリ</label>
+      <select id="edit-category"></select>
+
+      <label for="edit-memo">メモ（任意）</label>
+      <textarea id="edit-memo"></textarea>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="edit-cancel">キャンセル</button>
+        <button class="btn btn-primary" id="edit-save">保存</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "budgetApp.store.v2";
+  const LEGACY_STORAGE_KEY = "budgetApp.project.v1";
+
+  /* ===== データ層(複数プロジェクト対応) ===== */
+  // ストア形式: { projects: [project, ...], currentProjectId: string }
+  function genProjectId(){
+    return "proj_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function loadStore(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        return JSON.parse(raw);
+      }
+      // 旧バージョン(単一プロジェクト)からの自動移行
+      const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if(legacyRaw){
+        const legacyProject = JSON.parse(legacyRaw);
+        legacyProject.id = genProjectId();
+        const migratedStore = {
+          projects: [legacyProject],
+          currentProjectId: legacyProject.id
+        };
+        saveStore(migratedStore);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        return migratedStore;
+      }
+      return null;
+    }catch(e){
+      console.error("プロジェクトデータの読み込みに失敗しました", e);
+      return null;
+    }
+  }
+
+  function saveStore(store){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  }
+
+  function getAllProjects(){
+    const store = loadStore();
+    return store ? store.projects : [];
+  }
+
+  // 現在選択中のプロジェクトを取得(既存コードと互換性を保つための関数名)
+  function loadProject(){
+    const store = loadStore();
+    if(!store || store.projects.length === 0) return null;
+    const current = store.projects.find(p => p.id === store.currentProjectId);
+    return current || store.projects[0];
+  }
+
+  // 現在選択中のプロジェクトを更新して保存(既存コードと互換性を保つための関数名)
+  function saveProject(project){
+    const store = loadStore();
+    if(!store) return;
+    const idx = store.projects.findIndex(p => p.id === project.id);
+    if(idx !== -1){
+      store.projects[idx] = project;
+    }
+    saveStore(store);
+  }
+
+  function createProject(projectData){
+    let store = loadStore();
+    if(!store){
+      store = { projects: [], currentProjectId: null };
+    }
+    const project = Object.assign({ id: genProjectId() }, projectData);
+    store.projects.push(project);
+    store.currentProjectId = project.id;
+    saveStore(store);
+    return project;
+  }
+
+  function switchProject(projectId){
+    const store = loadStore();
+    if(!store) return;
+    if(!store.projects.some(p => p.id === projectId)) return;
+    store.currentProjectId = projectId;
+    saveStore(store);
+  }
+
+  function deleteProjectById(projectId){
+    const store = loadStore();
+    if(!store) return;
+    store.projects = store.projects.filter(p => p.id !== projectId);
+    if(store.currentProjectId === projectId){
+      store.currentProjectId = store.projects.length > 0 ? store.projects[0].id : null;
+    }
+    saveStore(store);
+  }
+
+  /* ===== 画面要素 ===== */
+  const onboardingEl = document.getElementById("onboarding");
+  const mainAppEl = document.getElementById("main-app");
+  const bottomnavEl = document.getElementById("bottomnav");
+  const projNameDisplay = document.getElementById("proj-name-display");
+  const projPeriodDisplay = document.getElementById("proj-period-display");
+
+  function formatPeriod(start, end){
+    if(!start && !end) return "";
+    const f = (d)=> d ? d.replaceAll("-", "/") : "未設定";
+    return f(start) + " 〜 " + f(end);
+  }
+
+  function renderTopbar(project){
+    projNameDisplay.textContent = project.name;
+    projPeriodDisplay.textContent = formatPeriod(project.startDate, project.endDate);
+  }
+
+  function showMainApp(project){
+    onboardingEl.style.display = "none";
+    mainAppEl.style.display = "block";
+    bottomnavEl.style.display = "flex";
+    renderTopbar(project);
+    fillSettingsForm(project);
+    renderCategoryChips(project);
+    renderCategorySelects(project);
+    renderExpenseList(project);
+    renderCategoryBudgetSettings(project);
+    renderDashboard(project);
+    renderProjectList();
+  }
+
+  function showOnboarding(){
+    onboardingEl.style.display = "flex";
+    mainAppEl.style.display = "none";
+    bottomnavEl.style.display = "none";
+  }
+
+  /* ===== オンボーディング: プロジェクト作成(初回) ===== */
+  document.getElementById("onb-submit").addEventListener("click", function(){
+    const name = document.getElementById("onb-name").value.trim();
+    const start = document.getElementById("onb-start").value;
+    const end = document.getElementById("onb-end").value;
+    const budgetRaw = document.getElementById("onb-budget").value;
+
+    if(!name){
+      alert("プロジェクト名を入力してください。");
+      return;
+    }
+    const budget = Number(budgetRaw);
+    if(!budgetRaw || isNaN(budget) || budget < 0){
+      alert("総予算額には0以上の数値を入力してください。");
+      return;
+    }
+
+    const project = createProject({
+      name: name,
+      startDate: start || null,
+      endDate: end || null,
+      totalBudget: budget,
+      categories: [],
+      categoryBudgets: {},
+      thresholds: { warning: 80, danger: 100 },
+      expenses: []
+    });
+
+    showMainApp(project);
+  });
+
+  /* ===== 設定画面: プロジェクト編集 ===== */
+  function fillSettingsForm(project){
+    document.getElementById("set-name").value = project.name;
+    document.getElementById("set-start").value = project.startDate || "";
+    document.getElementById("set-end").value = project.endDate || "";
+    document.getElementById("set-budget").value = project.totalBudget;
+    document.getElementById("set-warn-threshold").value = project.thresholds.warning;
+    document.getElementById("set-danger-threshold").value = project.thresholds.danger;
+  }
+
+  document.getElementById("set-save").addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+
+    const name = document.getElementById("set-name").value.trim();
+    const start = document.getElementById("set-start").value;
+    const end = document.getElementById("set-end").value;
+    const budgetRaw = document.getElementById("set-budget").value;
+    const budget = Number(budgetRaw);
+
+    if(!name){
+      alert("プロジェクト名を入力してください。");
+      return;
+    }
+    if(!budgetRaw || isNaN(budget) || budget < 0){
+      alert("総予算額には0以上の数値を入力してください。");
+      return;
+    }
+
+    project.name = name;
+    project.startDate = start || null;
+    project.endDate = end || null;
+    project.totalBudget = budget;
+
+    saveProject(project);
+    renderTopbar(project);
+    renderDashboard(project);
+    alert("変更を保存しました。");
+  });
+
+  /* ===== カテゴリ管理 ===== */
+  const categoryChipList = document.getElementById("category-chip-list");
+  const newCategoryInput = document.getElementById("new-category-input");
+
+  function renderCategoryChips(project){
+    categoryChipList.innerHTML = "";
+    if(project.categories.length === 0){
+      const hint = document.createElement("div");
+      hint.className = "empty-hint";
+      hint.textContent = "カテゴリがまだありません。下のフォームから追加してください。";
+      categoryChipList.appendChild(hint);
+      return;
+    }
+    project.categories.forEach(function(cat){
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      chip.dataset.category = cat;
+
+      const label = document.createElement("span");
+      label.textContent = cat;
+      label.style.cursor = "text";
+      label.title = "クリックして名前を編集";
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.setAttribute("aria-label", "カテゴリを削除");
+      delBtn.textContent = "×";
+      delBtn.addEventListener("click", function(){
+        deleteCategory(cat);
+      });
+
+      label.addEventListener("click", function(){
+        startEditCategory(chip, cat);
+      });
+
+      chip.appendChild(label);
+      chip.appendChild(delBtn);
+      categoryChipList.appendChild(chip);
+    });
+  }
+
+  function startEditCategory(chip, oldName){
+    chip.classList.add("edit-mode");
+    chip.innerHTML = "";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = oldName;
+    chip.appendChild(input);
+    input.focus();
+    input.select();
+
+    function commit(){
+      const newName = input.value.trim();
+      if(newName && newName !== oldName){
+        renameCategory(oldName, newName);
+      } else {
+        const project = loadProject();
+        renderCategoryChips(project);
+      }
+    }
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", function(e){
+      if(e.key === "Enter") input.blur();
+      if(e.key === "Escape"){
+        const project = loadProject();
+        renderCategoryChips(project);
+      }
+    });
+  }
+
+  function renameCategory(oldName, newName){
+    const project = loadProject();
+    if(!project) return;
+    if(project.categories.includes(newName)){
+      alert("同じ名前のカテゴリが既に存在します。");
+      renderCategoryChips(project);
+      return;
+    }
+    const idx = project.categories.indexOf(oldName);
+    if(idx !== -1) project.categories[idx] = newName;
+
+    project.expenses.forEach(function(exp){
+      if(exp.category === oldName) exp.category = newName;
+    });
+    if(project.categoryBudgets && Object.prototype.hasOwnProperty.call(project.categoryBudgets, oldName)){
+      project.categoryBudgets[newName] = project.categoryBudgets[oldName];
+      delete project.categoryBudgets[oldName];
+    }
+
+    saveProject(project);
+    renderCategoryChips(project);
+    renderCategorySelects(project);
+    renderExpenseList(project);
+    renderCategoryBudgetSettings(project);
+    renderDashboard(project);
+  }
+
+  function deleteCategory(cat){
+    const project = loadProject();
+    if(!project) return;
+    const usedCount = project.expenses.filter(e => e.category === cat).length;
+    if(usedCount > 0){
+      const ok = confirm("「" + cat + "」を使用している支出が " + usedCount + " 件あります。削除すると、それらの支出のカテゴリは未分類になります。削除しますか？");
+      if(!ok) return;
+      project.expenses.forEach(function(exp){
+        if(exp.category === cat) exp.category = "未分類";
+      });
+    }
+    project.categories = project.categories.filter(c => c !== cat);
+    if(project.categoryBudgets) delete project.categoryBudgets[cat];
+
+    saveProject(project);
+    renderCategoryChips(project);
+    renderCategorySelects(project);
+    renderExpenseList(project);
+    renderCategoryBudgetSettings(project);
+    renderDashboard(project);
+  }
+
+  document.getElementById("add-category-btn").addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+    const name = newCategoryInput.value.trim();
+    if(!name){
+      alert("カテゴリ名を入力してください。");
+      return;
+    }
+    if(project.categories.includes(name)){
+      alert("同じ名前のカテゴリが既に存在します。");
+      return;
+    }
+    project.categories.push(name);
+    saveProject(project);
+    newCategoryInput.value = "";
+    renderCategoryChips(project);
+    renderCategorySelects(project);
+    renderCategoryBudgetSettings(project);
+  });
+  newCategoryInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter") document.getElementById("add-category-btn").click();
+  });
+
+  function renderCategorySelects(project){
+    const targets = [
+      { el: document.getElementById("exp-category"), includeAll: false },
+      { el: document.getElementById("edit-category"), includeAll: false },
+      { el: document.getElementById("exp-filter-category"), includeAll: true }
+    ];
+    targets.forEach(function(t){
+      const prevValue = t.el.value;
+      t.el.innerHTML = "";
+      if(t.includeAll){
+        const allOpt = document.createElement("option");
+        allOpt.value = "";
+        allOpt.textContent = "すべてのカテゴリ";
+        t.el.appendChild(allOpt);
+      }
+      if(project.categories.length === 0 && !t.includeAll){
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "（先に設定画面でカテゴリを追加してください）";
+        t.el.appendChild(opt);
+      }
+      project.categories.forEach(function(cat){
+        const opt = document.createElement("option");
+        opt.value = cat;
+        opt.textContent = cat;
+        t.el.appendChild(opt);
+      });
+      if([...t.el.options].some(o => o.value === prevValue)){
+        t.el.value = prevValue;
+      }
+    });
+    document.getElementById("exp-submit").disabled = project.categories.length === 0;
+    document.getElementById("exp-submit").style.opacity = project.categories.length === 0 ? "0.5" : "1";
+    document.getElementById("exp-no-category-hint").style.display = project.categories.length === 0 ? "block" : "none";
+  }
+
+  /* ===== 支出記録 ===== */
+  const expenseListEl = document.getElementById("expense-list");
+  const expenseEmptyHint = document.getElementById("expense-empty-hint");
+  const expFilterCategory = document.getElementById("exp-filter-category");
+  const expFilterSort = document.getElementById("exp-filter-sort");
+
+  function genId(){
+    return "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function formatYen(n){
+    return "¥" + Number(n).toLocaleString("ja-JP");
+  }
+
+  function formatDateShort(d){
+    if(!d) return "";
+    return d.replaceAll("-", "/");
+  }
+
+  document.getElementById("exp-submit").addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+
+    const date = document.getElementById("exp-date").value;
+    const amountRaw = document.getElementById("exp-amount").value;
+    const purpose = document.getElementById("exp-purpose").value.trim();
+    const category = document.getElementById("exp-category").value;
+    const memo = document.getElementById("exp-memo").value.trim();
+
+    const amount = Number(amountRaw);
+    if(!date){
+      alert("日付を入力してください。");
+      return;
+    }
+    if(!amountRaw || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)){
+      alert("金額には1以上の整数を入力してください。");
+      return;
+    }
+    if(!purpose){
+      alert("用途を入力してください。");
+      return;
+    }
+    if(!category){
+      alert("カテゴリを選択してください。先に設定画面でカテゴリを登録してください。");
+      return;
+    }
+
+    project.expenses.push({
+      id: genId(),
+      date: date,
+      amount: amount,
+      purpose: purpose,
+      category: category,
+      memo: memo
+    });
+
+    saveProject(project);
+
+    document.getElementById("exp-amount").value = "";
+    document.getElementById("exp-purpose").value = "";
+    document.getElementById("exp-memo").value = "";
+
+    renderExpenseList(project);
+    renderDashboard(project);
+  });
+
+  function getSortedFilteredExpenses(project){
+    const catFilter = expFilterCategory.value;
+    const sortMode = expFilterSort.value;
+
+    let list = project.expenses.slice();
+    if(catFilter){
+      list = list.filter(e => e.category === catFilter);
+    }
+
+    list.sort(function(a, b){
+      switch(sortMode){
+        case "date-asc": return a.date.localeCompare(b.date) || a.id.localeCompare(b.id);
+        case "amount-desc": return b.amount - a.amount;
+        case "amount-asc": return a.amount - b.amount;
+        case "date-desc":
+        default: return b.date.localeCompare(a.date) || b.id.localeCompare(a.id);
+      }
+    });
+    return list;
+  }
+
+  function renderExpenseList(project){
+    const list = getSortedFilteredExpenses(project);
+    expenseListEl.innerHTML = "";
+
+    if(list.length === 0){
+      expenseEmptyHint.style.display = "block";
+      return;
+    }
+    expenseEmptyHint.style.display = "none";
+
+    list.forEach(function(exp){
+      const item = document.createElement("div");
+      item.className = "expense-item";
+
+      item.innerHTML =
+        '<span class="cat-dot"></span>' +
+        '<div class="info">' +
+          '<div class="purpose"></div>' +
+          '<div class="meta"></div>' +
+        '</div>' +
+        '<div class="amount num"></div>' +
+        '<div class="row-actions">' +
+          '<button type="button" class="edit-btn" aria-label="編集">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>' +
+          '</button>' +
+          '<button type="button" class="del-btn" aria-label="削除">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>' +
+          '</button>' +
+        '</div>';
+
+      item.querySelector(".purpose").textContent = exp.purpose;
+      item.querySelector(".meta").textContent = formatDateShort(exp.date) + " ・ " + exp.category + (exp.memo ? " ・ " + exp.memo : "");
+      item.querySelector(".amount").textContent = formatYen(exp.amount);
+
+      item.querySelector(".edit-btn").addEventListener("click", function(){
+        openEditModal(exp.id);
+      });
+      item.querySelector(".del-btn").addEventListener("click", function(){
+        deleteExpense(exp.id);
+      });
+
+      expenseListEl.appendChild(item);
+    });
+  }
+
+  function deleteExpense(id){
+    const project = loadProject();
+    if(!project) return;
+    const target = project.expenses.find(e => e.id === id);
+    if(!target) return;
+    const ok = confirm("「" + target.purpose + "」（" + formatYen(target.amount) + "）を削除しますか？");
+    if(!ok) return;
+    project.expenses = project.expenses.filter(e => e.id !== id);
+    saveProject(project);
+    renderExpenseList(project);
+    renderDashboard(project);
+  }
+
+  expFilterCategory.addEventListener("change", function(){
+    renderExpenseList(loadProject());
+  });
+  expFilterSort.addEventListener("change", function(){
+    renderExpenseList(loadProject());
+  });
+
+  /* ===== 支出編集モーダル ===== */
+  const editModalOverlay = document.getElementById("edit-modal-overlay");
+
+  function openEditModal(id){
+    const project = loadProject();
+    if(!project) return;
+    const exp = project.expenses.find(e => e.id === id);
+    if(!exp) return;
+
+    document.getElementById("edit-id").value = exp.id;
+    document.getElementById("edit-date").value = exp.date;
+    document.getElementById("edit-amount").value = exp.amount;
+    document.getElementById("edit-purpose").value = exp.purpose;
+    document.getElementById("edit-category").value = exp.category;
+    document.getElementById("edit-memo").value = exp.memo || "";
+
+    editModalOverlay.classList.add("active");
+  }
+
+  function closeEditModal(){
+    editModalOverlay.classList.remove("active");
+  }
+
+  document.getElementById("edit-cancel").addEventListener("click", closeEditModal);
+  editModalOverlay.addEventListener("click", function(e){
+    if(e.target === editModalOverlay) closeEditModal();
+  });
+
+  document.getElementById("edit-save").addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+
+    const id = document.getElementById("edit-id").value;
+    const exp = project.expenses.find(e => e.id === id);
+    if(!exp) return;
+
+    const date = document.getElementById("edit-date").value;
+    const amountRaw = document.getElementById("edit-amount").value;
+    const purpose = document.getElementById("edit-purpose").value.trim();
+    const category = document.getElementById("edit-category").value;
+    const memo = document.getElementById("edit-memo").value.trim();
+    const amount = Number(amountRaw);
+
+    if(!date){
+      alert("日付を入力してください。");
+      return;
+    }
+    if(!amountRaw || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)){
+      alert("金額には1以上の整数を入力してください。");
+      return;
+    }
+    if(!purpose){
+      alert("用途を入力してください。");
+      return;
+    }
+
+    exp.date = date;
+    exp.amount = amount;
+    exp.purpose = purpose;
+    exp.category = category;
+    exp.memo = memo;
+
+    saveProject(project);
+    closeEditModal();
+    renderExpenseList(project);
+    renderDashboard(project);
+  });
+
+  /* ===== 警告閾値の設定保存 ===== */
+  document.getElementById("set-threshold-save").addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+
+    const warnRaw = document.getElementById("set-warn-threshold").value;
+    const dangerRaw = document.getElementById("set-danger-threshold").value;
+    const warn = Number(warnRaw);
+    const danger = Number(dangerRaw);
+
+    if(!warnRaw || isNaN(warn) || warn <= 0){
+      alert("注意の閾値には1以上の数値を入力してください。");
+      return;
+    }
+    if(!dangerRaw || isNaN(danger) || danger <= 0){
+      alert("警告の閾値には1以上の数値を入力してください。");
+      return;
+    }
+    if(warn >= danger){
+      alert("注意の閾値は、警告の閾値より小さい値にしてください。");
+      return;
+    }
+
+    project.thresholds = { warning: warn, danger: danger };
+    saveProject(project);
+    renderDashboard(project);
+    alert("閾値を保存しました。");
+  });
+
+  /* ===== カテゴリ別予算の設定 ===== */
+  const catBudgetSettingsList = document.getElementById("cat-budget-settings-list");
+  const catBudgetEmptyHint = document.getElementById("cat-budget-empty-hint");
+  const catBudgetSaveBtn = document.getElementById("set-cat-budget-save");
+
+  function renderCategoryBudgetSettings(project){
+    catBudgetSettingsList.innerHTML = "";
+    if(project.categories.length === 0){
+      catBudgetEmptyHint.style.display = "block";
+      catBudgetSaveBtn.style.display = "none";
+      return;
+    }
+    catBudgetEmptyHint.style.display = "none";
+    catBudgetSaveBtn.style.display = "block";
+
+    project.categories.forEach(function(cat){
+      const row = document.createElement("div");
+      row.className = "cat-budget-setting-row";
+      const existing = project.categoryBudgets[cat];
+
+      row.innerHTML =
+        '<span class="cbs-name"></span>' +
+        '<input type="number" min="0" step="1" placeholder="未設定（任意）">';
+      row.querySelector(".cbs-name").textContent = cat;
+      const input = row.querySelector("input");
+      input.dataset.category = cat;
+      if(existing !== undefined && existing !== null){
+        input.value = existing;
+      }
+      catBudgetSettingsList.appendChild(row);
+    });
+  }
+
+  catBudgetSaveBtn.addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+
+    const inputs = catBudgetSettingsList.querySelectorAll("input");
+    const newBudgets = {};
+    for(const input of inputs){
+      const raw = input.value;
+      if(raw === "") continue;
+      const val = Number(raw);
+      if(isNaN(val) || val < 0){
+        alert("カテゴリ別予算には0以上の数値を入力してください。");
+        return;
+      }
+      newBudgets[input.dataset.category] = val;
+    }
+    project.categoryBudgets = newBudgets;
+    saveProject(project);
+    renderDashboard(project);
+    alert("カテゴリ別予算を保存しました。");
+  });
+
+  /* ===== ダッシュボード ===== */
+  function getGaugeLevel(rate, thresholds){
+    if(rate >= thresholds.danger) return "danger";
+    if(rate >= thresholds.warning) return "warn";
+    return "accent";
+  }
+
+  function renderDashboard(project){
+    renderDashboardProjectTabs(project);
+
+    const used = project.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const remaining = project.totalBudget - used;
+    const rate = project.totalBudget > 0 ? (used / project.totalBudget) * 100 : 0;
+    const level = getGaugeLevel(rate, project.thresholds);
+
+    document.getElementById("sum-total").textContent = formatYen(project.totalBudget);
+    document.getElementById("sum-used").textContent = formatYen(used);
+
+    const remainingEl = document.getElementById("sum-remaining");
+    remainingEl.textContent = formatYen(remaining);
+    remainingEl.classList.toggle("danger", remaining < 0);
+    remainingEl.classList.toggle("accent", remaining >= 0);
+
+    const rateEl = document.getElementById("sum-rate");
+    rateEl.textContent = rate.toFixed(1) + "%";
+    rateEl.classList.remove("accent", "warn", "danger");
+    rateEl.classList.add(level);
+
+    const gaugeFill = document.getElementById("budget-gauge-fill");
+    gaugeFill.style.width = Math.min(rate, 100) + "%";
+    gaugeFill.classList.remove("warn", "danger");
+    if(level === "warn") gaugeFill.classList.add("warn");
+    if(level === "danger") gaugeFill.classList.add("danger");
+
+    const gaugePct = document.getElementById("budget-gauge-pct");
+    gaugePct.textContent = rate.toFixed(1) + "%";
+    gaugePct.classList.remove("accent", "warn", "danger");
+    gaugePct.classList.add(level);
+
+    const banner = document.getElementById("budget-alert-banner");
+    banner.classList.remove("warn", "danger");
+    if(level === "danger"){
+      banner.style.display = "flex";
+      banner.classList.add("danger");
+      banner.innerHTML = alertIcon() + '<span>予算消化率が警告閾値（' + project.thresholds.danger + '%）を超えています。支出を見直してください。</span>';
+    } else if(level === "warn"){
+      banner.style.display = "flex";
+      banner.classList.add("warn");
+      banner.innerHTML = alertIcon() + '<span>予算消化率が注意閾値（' + project.thresholds.warning + '%）を超えました。今後の支出にご注意ください。</span>';
+    } else {
+      banner.style.display = "none";
+    }
+
+    renderPace(project, used, rate);
+    renderCategoryBudgetGauges(project);
+    renderPieChart(project);
+    renderBarChart(project);
+    renderDashboardRecent(project);
+  }
+
+  function alertIcon(){
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  }
+
+  function renderPace(project, used, rate){
+    const paceCard = document.getElementById("pace-card");
+    if(!project.startDate || !project.endDate){
+      paceCard.style.display = "none";
+      return;
+    }
+
+    const start = new Date(project.startDate + "T00:00:00");
+    const end = new Date(project.endDate + "T00:00:00");
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const totalDays = Math.round((end - start) / 86400000) + 1;
+    if(totalDays <= 0){
+      paceCard.style.display = "none";
+      return;
+    }
+    paceCard.style.display = "block";
+
+    let elapsedDays = Math.round((today - start) / 86400000) + 1;
+    elapsedDays = Math.max(0, Math.min(elapsedDays, totalDays));
+    const elapsedRate = (elapsedDays / totalDays) * 100;
+
+    document.getElementById("pace-elapsed-pct").textContent = elapsedRate.toFixed(1) + "%";
+    document.getElementById("pace-budget-pct").textContent = rate.toFixed(1) + "%";
+    document.getElementById("pace-days").textContent = elapsedDays + "日 / " + totalDays + "日";
+
+    const perDay = elapsedDays > 0 ? used / elapsedDays : 0;
+    document.getElementById("pace-per-day").textContent = formatYen(Math.round(perDay)) + " /日";
+
+    const forecast = perDay * totalDays;
+    const forecastEl = document.getElementById("pace-forecast");
+    forecastEl.textContent = formatYen(Math.round(forecast));
+    forecastEl.classList.toggle("danger", forecast > project.totalBudget);
+
+    const statusEl = document.getElementById("pace-status");
+    const statusText = document.getElementById("pace-status-text");
+    const isOverPace = rate > elapsedRate;
+    statusEl.classList.remove("ok", "danger");
+    if(isOverPace){
+      statusEl.classList.add("danger");
+      statusText.textContent = "予算超過ペース";
+    } else {
+      statusEl.classList.add("ok");
+      statusText.textContent = "順調なペース";
+    }
+  }
+
+  function renderCategoryBudgetGauges(project){
+    const card = document.getElementById("category-budget-card");
+    const list = document.getElementById("cat-budget-list");
+    const setCats = Object.keys(project.categoryBudgets).filter(c =>
+      project.categories.includes(c) && project.categoryBudgets[c] !== undefined && project.categoryBudgets[c] !== null
+    );
+
+    if(setCats.length === 0){
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "block";
+    list.innerHTML = "";
+
+    setCats.forEach(function(cat){
+      const budget = project.categoryBudgets[cat];
+      const used = project.expenses
+        .filter(e => e.category === cat)
+        .reduce((sum, e) => sum + e.amount, 0);
+      const rate = budget > 0 ? (used / budget) * 100 : (used > 0 ? 100 : 0);
+      const level = getGaugeLevel(rate, project.thresholds);
+
+      const row = document.createElement("div");
+      row.className = "cat-budget-row";
+      row.innerHTML =
+        '<div class="cb-top">' +
+          '<span class="cb-name"></span>' +
+          '<span class="cb-amount num"></span>' +
+        '</div>' +
+        '<div class="gauge-track"><div class="gauge-fill"></div></div>';
+
+      row.querySelector(".cb-name").textContent = cat;
+      row.querySelector(".cb-amount").textContent = formatYen(used) + " / " + formatYen(budget);
+      const fill = row.querySelector(".gauge-fill");
+      fill.style.width = Math.min(rate, 100) + "%";
+      if(level === "warn") fill.classList.add("warn");
+      if(level === "danger") fill.classList.add("danger");
+
+      list.appendChild(row);
+    });
+  }
+
+  /* ===== ダッシュボード: プロジェクト切替タブ ===== */
+  function renderDashboardProjectTabs(currentProject){
+    const wrap = document.getElementById("dashboard-proj-tabs");
+    const store = loadStore();
+    if(!store || store.projects.length <= 1){
+      wrap.style.display = "none";
+      wrap.innerHTML = "";
+      return;
+    }
+
+    wrap.style.display = "flex";
+    wrap.innerHTML = "";
+
+    store.projects.forEach(function(p){
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "proj-tab" + (p.id === currentProject.id ? " active" : "");
+      tab.textContent = p.name;
+      tab.addEventListener("click", function(){
+        if(p.id === currentProject.id) return;
+        switchProject(p.id);
+        showMainApp(loadProject());
+      });
+      wrap.appendChild(tab);
+    });
+
+    const addTab = document.createElement("button");
+    addTab.type = "button";
+    addTab.className = "proj-tab pt-add";
+    addTab.setAttribute("aria-label", "新しいプロジェクトを作成");
+    addTab.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>';
+    addTab.addEventListener("click", function(){
+      goToScreen("projects");
+    });
+    wrap.appendChild(addTab);
+  }
+
+  function renderDashboardRecent(project){
+    const listEl = document.getElementById("dashboard-recent-list");
+    const emptyEl = document.getElementById("dashboard-recent-empty");
+    const recent = project.expenses.slice()
+      .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
+      .slice(0, 5);
+
+    listEl.innerHTML = "";
+    if(recent.length === 0){
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    recent.forEach(function(exp){
+      const item = document.createElement("div");
+      item.className = "expense-item";
+      item.innerHTML =
+        '<span class="cat-dot"></span>' +
+        '<div class="info">' +
+          '<div class="purpose"></div>' +
+          '<div class="meta"></div>' +
+        '</div>' +
+        '<div class="amount num"></div>';
+      item.querySelector(".purpose").textContent = exp.purpose;
+      item.querySelector(".meta").textContent = formatDateShort(exp.date) + " ・ " + exp.category;
+      item.querySelector(".amount").textContent = formatYen(exp.amount);
+      listEl.appendChild(item);
+    });
+  }
+
+  /* ===== グラフ: 共通カラーパレット ===== */
+  const CHART_PALETTE = ["#2D6A4F","#D97706","#3B82F6","#9333EA","#DC2626","#0D9488","#CA8A04","#DB2777","#6366F1","#65A30D"];
+
+  function getCategoryColorMap(categories){
+    const map = {};
+    categories.forEach(function(cat, i){
+      map[cat] = CHART_PALETTE[i % CHART_PALETTE.length];
+    });
+    return map;
+  }
+
+  /* ===== 円グラフ: カテゴリ別支出割合 ===== */
+  function renderPieChart(project){
+    const card = document.getElementById("pie-chart-card");
+    const canvas = document.getElementById("pie-chart");
+    const legendEl = document.getElementById("pie-legend");
+
+    if(project.expenses.length === 0){
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "block";
+
+    // カテゴリ別集計(未分類含む、実際に支出があるものだけ)
+    const totals = {};
+    project.expenses.forEach(function(e){
+      totals[e.category] = (totals[e.category] || 0) + e.amount;
+    });
+    const entries = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+    const grandTotal = entries.reduce((s, [,v]) => s + v, 0);
+
+    const colorMap = getCategoryColorMap(project.categories);
+    function colorFor(cat){
+      return colorMap[cat] || "#9CA3AF"; // 未分類等はグレー
+    }
+
+    // Canvas描画(高DPI対応)
+    const dpr = window.devicePixelRatio || 1;
+    const size = 140;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
+
+    const cx = size / 2, cy = size / 2;
+    const outerR = size / 2;
+    const innerR = outerR * 0.6; // ドーナツ状にして数値が映えるように
+
+    let startAngle = -Math.PI / 2;
+    entries.forEach(function([cat, amount]){
+      const sliceAngle = (amount / grandTotal) * Math.PI * 2;
+      const endAngle = startAngle + sliceAngle;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, outerR, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = colorFor(cat);
+      ctx.fill();
+
+      startAngle = endAngle;
+    });
+
+    // 中央をくり抜いてドーナツに
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = "source-over";
+
+    // 凡例
+    legendEl.innerHTML = "";
+    entries.forEach(function([cat, amount]){
+      const pct = ((amount / grandTotal) * 100).toFixed(1);
+      const row = document.createElement("div");
+      row.className = "legend-row";
+      row.innerHTML =
+        '<span class="dot" style="background:' + colorFor(cat) + '"></span>' +
+        '<span class="lg-name"></span>' +
+        '<span class="lg-pct num"></span>';
+      row.querySelector(".lg-name").textContent = cat;
+      row.querySelector(".lg-pct").textContent = pct + "%";
+      legendEl.appendChild(row);
+    });
+  }
+
+  /* ===== 棒グラフ: 時系列の支出推移 ===== */
+  let barChartPeriod = "week";
+
+  function getISOWeekKey(date){
+    // 月曜始まりの週単位キー(YYYY-Www)
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = (d.getUTCDay() + 6) % 7; // 月曜=0
+    d.setUTCDate(d.getUTCDate() - dayNum + 3);
+    const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+    const weekNum = 1 + Math.round(((d - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+    return d.getUTCFullYear() + "-W" + String(weekNum).padStart(2, "0");
+  }
+
+  function getWeekRangeLabel(dateStr){
+    const date = new Date(dateStr + "T00:00:00");
+    const dayNum = (date.getDay() + 6) % 7;
+    const monday = new Date(date);
+    monday.setDate(date.getDate() - dayNum);
+    return (monday.getMonth()+1) + "/" + monday.getDate();
+  }
+
+  function renderBarChart(project){
+    const card = document.getElementById("bar-chart-card");
+    const canvas = document.getElementById("bar-chart");
+    const emptyEl = document.getElementById("bar-chart-empty");
+
+    if(project.expenses.length === 0){
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "block";
+
+    // 期間ごとに集計
+    const buckets = {};
+    project.expenses.forEach(function(e){
+      let key, label;
+      if(barChartPeriod === "week"){
+        key = getISOWeekKey(new Date(e.date + "T00:00:00"));
+        label = getWeekRangeLabel(e.date) + "〜";
+      } else {
+        key = e.date.slice(0, 7); // YYYY-MM
+        label = Number(key.slice(5,7)) + "月";
+      }
+      if(!buckets[key]) buckets[key] = { label: label, total: 0 };
+      buckets[key].total += e.amount;
+    });
+
+    const keys = Object.keys(buckets).sort();
+    // 直近8区間に絞る(表示が窮屈にならないように)
+    const shownKeys = keys.slice(-8);
+
+    if(shownKeys.length === 0){
+      emptyEl.style.display = "block";
+      canvas.style.display = "none";
+      return;
+    }
+    emptyEl.style.display = "none";
+    canvas.style.display = "block";
+
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = canvas.parentElement.clientWidth - 36; // カードのpadding分を考慮
+    const cssHeight = 160;
+    canvas.width = cssWidth * dpr;
+    canvas.height = cssHeight * dpr;
+    canvas.style.width = cssWidth + "px";
+    canvas.style.height = cssHeight + "px";
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+    const maxVal = Math.max(...shownKeys.map(k => buckets[k].total));
+    const padBottom = 22, padTop = 10;
+    const chartH = cssHeight - padBottom - padTop;
+    const barAreaW = cssWidth / shownKeys.length;
+    const barW = Math.min(barAreaW * 0.5, 34);
+
+    ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+
+    shownKeys.forEach(function(key, i){
+      const bucket = buckets[key];
+      const barH = maxVal > 0 ? (bucket.total / maxVal) * chartH : 0;
+      const x = i * barAreaW + (barAreaW - barW) / 2;
+      const y = padTop + (chartH - barH);
+
+      ctx.fillStyle = "#2D6A4F";
+      const r = 4;
+      ctx.beginPath();
+      ctx.moveTo(x, y + barH);
+      ctx.lineTo(x, y + r);
+      ctx.arcTo(x, y, x + r, y, r);
+      ctx.lineTo(x + barW - r, y);
+      ctx.arcTo(x + barW, y, x + barW, y + r, r);
+      ctx.lineTo(x + barW, y + barH);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#6B7280";
+      ctx.fillText(bucket.label, x + barW / 2, cssHeight - 6);
+    });
+  }
+
+  document.getElementById("bar-period-toggle").addEventListener("click", function(e){
+    const btn = e.target.closest("button[data-period]");
+    if(!btn) return;
+    barChartPeriod = btn.dataset.period;
+    this.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const project = loadProject();
+    if(project) renderBarChart(project);
+  });
+
+  /* ===== プロジェクト一覧 ===== */
+  const projectListEl = document.getElementById("project-list");
+
+  function renderProjectList(){
+    const store = loadStore();
+    if(!store) return;
+    projectListEl.innerHTML = "";
+
+    if(store.projects.length === 0){
+      const hint = document.createElement("div");
+      hint.className = "empty-hint";
+      hint.textContent = "プロジェクトがまだありません。上のフォームから作成してください。";
+      projectListEl.appendChild(hint);
+      return;
+    }
+
+    store.projects.forEach(function(p){
+      const used = p.expenses.reduce((sum, e) => sum + e.amount, 0);
+      const isCurrent = p.id === store.currentProjectId;
+
+      const card = document.createElement("div");
+      card.className = "project-card" + (isCurrent ? " is-current" : "");
+      card.innerHTML =
+        '<div class="pc-head">' +
+          '<span class="pc-name"></span>' +
+          (isCurrent ? '<span class="pc-badge">選択中</span>' : '') +
+        '</div>' +
+        '<div class="pc-period"></div>' +
+        '<div class="pc-bottom">' +
+          '<span class="pc-amounts num"></span>' +
+          '<button type="button" class="pc-del" aria-label="プロジェクトを削除">' +
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>' +
+          '</button>' +
+        '</div>';
+
+      card.querySelector(".pc-name").textContent = p.name;
+      card.querySelector(".pc-period").textContent = formatPeriod(p.startDate, p.endDate) || "期間未設定";
+      card.querySelector(".pc-amounts").innerHTML =
+        formatYen(used) + ' / ' + formatYen(p.totalBudget) +
+        ' <span class="pc-rate">（' + (p.totalBudget > 0 ? ((used/p.totalBudget)*100).toFixed(0) : "0") + '%）</span>';
+
+      card.addEventListener("click", function(e){
+        if(e.target.closest(".pc-del")) return;
+        if(!isCurrent){
+          switchProject(p.id);
+          showMainApp(loadProject());
+          goToScreen("dashboard");
+        }
+      });
+
+      card.querySelector(".pc-del").addEventListener("click", function(e){
+        e.stopPropagation();
+        const ok = confirm("「" + p.name + "」を削除しますか？記録された支出データもすべて削除されます。この操作は取り消せません。");
+        if(!ok) return;
+        deleteProjectById(p.id);
+        const remaining = loadProject();
+        if(remaining){
+          showMainApp(remaining);
+        } else {
+          showOnboarding();
+        }
+      });
+
+      projectListEl.appendChild(card);
+    });
+  }
+
+  document.getElementById("np-submit").addEventListener("click", function(){
+    const name = document.getElementById("np-name").value.trim();
+    const start = document.getElementById("np-start").value;
+    const end = document.getElementById("np-end").value;
+    const budgetRaw = document.getElementById("np-budget").value;
+
+    if(!name){
+      alert("プロジェクト名を入力してください。");
+      return;
+    }
+    const budget = Number(budgetRaw);
+    if(!budgetRaw || isNaN(budget) || budget < 0){
+      alert("総予算額には0以上の数値を入力してください。");
+      return;
+    }
+
+    const project = createProject({
+      name: name,
+      startDate: start || null,
+      endDate: end || null,
+      totalBudget: budget,
+      categories: [],
+      categoryBudgets: {},
+      thresholds: { warning: 80, danger: 100 },
+      expenses: []
+    });
+
+    document.getElementById("np-name").value = "";
+    document.getElementById("np-start").value = "";
+    document.getElementById("np-end").value = "";
+    document.getElementById("np-budget").value = "";
+
+    showMainApp(project);
+    goToScreen("dashboard");
+  });
+
+  /* ===== トップバー: プロジェクト名タップで一覧へ ===== */
+  document.getElementById("proj-name-display-btn").addEventListener("click", function(){
+    goToScreen("projects");
+  });
+
+  /* ===== 画面遷移ヘルパー ===== */
+  function goToScreen(target){
+    bottomnavEl.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+    const navBtn = bottomnavEl.querySelector('button[data-target="' + target + '"]');
+    if(navBtn) navBtn.classList.add("active");
+
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const screenEl = document.querySelector('.screen[data-screen="' + target + '"]');
+    if(screenEl) screenEl.classList.add("active");
+
+    if(target === "projects") renderProjectList();
+  }
+
+  /* ===== 下部ナビゲーション: 画面切替 ===== */
+  bottomnavEl.addEventListener("click", function(e){
+    const btn = e.target.closest("button[data-target]");
+    if(!btn) return;
+    goToScreen(btn.dataset.target);
+  });
+
+  /* ===== 初期化 ===== */
+  function init(){
+    const project = loadProject();
+    if(project){
+      showMainApp(project);
+    } else {
+      showOnboarding();
+    }
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>

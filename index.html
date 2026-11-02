@@ -2,8 +2,19 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>予算管理</title>
+
+<!-- PWA / Web App 設定 -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2D6A4F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="予算管理">
+<meta name="description" content="シンプルで使いやすいプロジェクト予算管理アプリ">
+
 <style>
   :root{
     --bg:#F7F5F0;
@@ -762,6 +773,138 @@
     align-items:center;
     justify-content:center;
   }
+
+  /* ===== トースト通知 ===== */
+  .toast-wrap{
+    position:fixed;
+    left:50%;
+    bottom:calc(var(--nav-h) + 16px);
+    transform:translateX(-50%);
+    z-index:200;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    pointer-events:none;
+    width:calc(100% - 40px);
+    max-width:480px;
+  }
+  .toast{
+    background:#1F2937;
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    line-height:1.5;
+    padding:11px 16px;
+    border-radius:12px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.18);
+    opacity:0;
+    transform:translateY(8px);
+    transition:opacity 0.2s ease, transform 0.2s ease;
+    text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+  .toast.success{ background:var(--accent); }
+  .toast.error{ background:var(--danger); }
+
+  /* ===== 円グラフ中央ラベル ===== */
+  .pie-wrap{
+    position:relative;
+    flex-shrink:0;
+    width:140px;
+    height:140px;
+  }
+  .pie-center{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    pointer-events:none;
+  }
+  .pie-center .pcl{ font-size:10.5px; color:var(--text-sub); }
+  .pie-center .pcv{ font-size:14px; font-weight:700; }
+  .legend-row .lg-amt{
+    color:var(--text);
+    flex-shrink:0;
+    font-weight:600;
+  }
+
+  /* ===== 支出一覧: 検索・集計 ===== */
+  .search-input{ margin-bottom:10px; }
+  .list-summary{
+    display:flex;
+    justify-content:space-between;
+    font-size:12px;
+    color:var(--text-sub);
+    margin-bottom:10px;
+    padding:0 2px;
+  }
+  .list-summary strong{ color:var(--text); }
+
+  /* ===== 支出フォーム: カテゴリその場追加 ===== */
+  .select-with-btn{ display:flex; gap:8px; }
+  .select-with-btn select{ flex:1; }
+  .icon-btn{
+    flex-shrink:0;
+    width:44px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--accent);
+    border-radius:10px;
+    cursor:pointer;
+    font-size:20px;
+    font-weight:700;
+    font-family:inherit;
+    line-height:1;
+  }
+  .icon-btn:hover{ background:var(--accent-soft); }
+  .inline-add-row{ margin-top:8px; display:none; }
+  .inline-add-row.active{ display:flex; }
+
+  /* ===== カテゴリ別予算: 配分バランス ===== */
+  .cat-budget-balance{
+    font-size:12.5px;
+    padding:10px 12px;
+    border-radius:10px;
+    background:var(--bg);
+    margin-top:10px;
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .cat-budget-balance .v{ font-weight:700; }
+  .cat-budget-balance.over{ background:var(--danger-soft); color:#991B1B; }
+
+  /* ===== チェックボックス ===== */
+  .check-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    color:var(--text);
+    margin-top:14px;
+    cursor:pointer;
+    font-weight:500;
+  }
+  .check-row input{ width:16px; height:16px; accent-color:var(--accent); margin:0; }
+
+  /* ===== データ管理 ===== */
+  .data-btns{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .data-btns .btn{ margin-top:0; width:100%; }
+  .data-btns .btn.full{ grid-column:1 / -1; }
+  .data-note{
+    font-size:11.5px;
+    color:var(--text-sub);
+    margin:10px 0 0;
+    line-height:1.6;
+  }
+  button:disabled{ cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -794,6 +937,11 @@
 
       <label for="onb-budget">総予算額（円） <span style="color:var(--danger)">*</span></label>
       <input type="number" id="onb-budget" placeholder="例：200000" min="0" step="1">
+
+      <label class="check-row" for="onb-preset">
+        <input type="checkbox" id="onb-preset" checked>
+        よく使うカテゴリを自動で追加する
+      </label>
 
       <button class="btn btn-primary" id="onb-submit">プロジェクトを作成</button>
     </div>
@@ -851,7 +999,13 @@
         <div class="card" id="pie-chart-card" style="display:none;">
           <h2>カテゴリ別支出</h2>
           <div class="chart-row">
-            <canvas id="pie-chart" width="160" height="160"></canvas>
+            <div class="pie-wrap">
+              <canvas id="pie-chart" width="160" height="160"></canvas>
+              <div class="pie-center">
+                <span class="pcl">支出合計</span>
+                <span class="pcv num" id="pie-center-total">¥0</span>
+              </div>
+            </div>
             <div class="chart-legend" id="pie-legend"></div>
           </div>
         </div>
@@ -919,7 +1073,7 @@
         <div class="card">
           <h2>支出を記録</h2>
           <div class="empty-hint" id="exp-no-category-hint" style="display:none; padding:0 0 14px;">
-            まだカテゴリが登録されていません。設定画面から先にカテゴリを追加してください。
+            まだカテゴリが登録されていません。カテゴリ欄の「＋」から追加してください。
           </div>
           <div class="field-row">
             <div>
@@ -936,7 +1090,14 @@
           <input type="text" id="exp-purpose" placeholder="例：合板材料の購入">
 
           <label for="exp-category">カテゴリ <span style="color:var(--danger)">*</span></label>
-          <select id="exp-category"></select>
+          <div class="select-with-btn">
+            <select id="exp-category"></select>
+            <button type="button" class="icon-btn" id="exp-cat-add-toggle" aria-label="カテゴリを追加" title="カテゴリを追加">＋</button>
+          </div>
+          <div class="add-chip-row inline-add-row" id="exp-cat-add-row">
+            <input type="text" id="exp-cat-add-input" placeholder="新しいカテゴリ名">
+            <button type="button" id="exp-cat-add-btn">追加</button>
+          </div>
 
           <label for="exp-memo">メモ（任意）</label>
           <textarea id="exp-memo" placeholder="補足情報があれば入力"></textarea>
@@ -946,6 +1107,7 @@
 
         <div class="card">
           <h2>支出一覧</h2>
+          <input type="text" id="exp-search" class="search-input" placeholder="用途・メモで検索">
           <div class="filter-row">
             <select id="exp-filter-category">
               <option value="">すべてのカテゴリ</option>
@@ -956,6 +1118,10 @@
               <option value="amount-desc">金額が高い順</option>
               <option value="amount-asc">金額が低い順</option>
             </select>
+          </div>
+          <div class="list-summary" id="exp-list-summary" style="display:none;">
+            <span id="exp-list-count"></span>
+            <span>合計 <strong class="num" id="exp-list-total">¥0</strong></span>
           </div>
           <div class="expense-list" id="expense-list"></div>
           <div class="empty-hint" id="expense-empty-hint" style="display:none;">まだ支出が記録されていません。</div>
@@ -1014,7 +1180,22 @@
             カテゴリ管理でカテゴリを追加すると、ここで予算上限を設定できます。
           </div>
           <div id="cat-budget-settings-list"></div>
+          <div class="cat-budget-balance" id="cat-budget-balance" style="display:none;">
+            <span>配分合計 <span class="v num" id="cat-budget-sum">¥0</span> / 総予算 <span class="num" id="cat-budget-total">¥0</span></span>
+            <span id="cat-budget-rest-label">未配分 <span class="v num" id="cat-budget-rest">¥0</span></span>
+          </div>
           <button class="btn btn-primary" id="set-cat-budget-save" style="display:none;">カテゴリ別予算を保存</button>
+        </div>
+
+        <div class="card">
+          <h2>データ管理</h2>
+          <div class="data-btns">
+            <button type="button" class="btn btn-secondary full" id="export-csv">支出をCSVで出力（現在のプロジェクト）</button>
+            <button type="button" class="btn btn-secondary" id="export-json">バックアップ保存</button>
+            <button type="button" class="btn btn-secondary" id="import-json-btn">バックアップから復元</button>
+          </div>
+          <input type="file" id="import-json-file" accept="application/json,.json" style="display:none;">
+          <p class="data-note">データはこのブラウザ内（localStorage）にのみ保存されています。ブラウザのデータ削除で消えるため、定期的にバックアップを保存してください。復元すると現在の全データが置き換わります。</p>
         </div>
 
       </section>
@@ -1037,6 +1218,10 @@
           </div>
           <label for="np-budget">総予算額（円） <span style="color:var(--danger)">*</span></label>
           <input type="number" id="np-budget" min="0" step="1" placeholder="例：200000">
+          <label class="check-row" for="np-preset">
+            <input type="checkbox" id="np-preset" checked>
+            よく使うカテゴリを自動で追加する
+          </label>
           <button class="btn btn-primary" id="np-submit">プロジェクトを作成</button>
         </div>
 
@@ -1109,6 +1294,9 @@
     </div>
   </div>
 
+  <!-- ===== トースト通知 ===== -->
+  <div class="toast-wrap" id="toast-wrap" aria-live="polite"></div>
+
 </div>
 
 <script>
@@ -1117,6 +1305,50 @@
 
   const STORAGE_KEY = "budgetApp.store.v2";
   const LEGACY_STORAGE_KEY = "budgetApp.project.v1";
+  const UNCATEGORIZED = "未分類";
+  const PRESET_CATEGORIES = ["材料費", "外注費", "人件費", "交通費", "備品・消耗品", "その他"];
+
+  /* ===== 共通ヘルパー ===== */
+  const toastWrap = document.getElementById("toast-wrap");
+  function showToast(message, type){
+    const el = document.createElement("div");
+    el.className = "toast " + (type || "success");
+    el.textContent = message;
+    toastWrap.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add("show"); });
+    setTimeout(function(){
+      el.classList.remove("show");
+      setTimeout(function(){ el.remove(); }, 250);
+    }, type === "error" ? 3200 : 2200);
+  }
+  function notifyError(message){ showToast(message, "error"); }
+
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  // 開始日・終了日の前後関係チェック(問題なければ true)
+  function validatePeriod(start, end){
+    if(start && end && start > end){
+      notifyError("終了日は開始日以降の日付にしてください。");
+      return false;
+    }
+    return true;
+  }
+
+  function buildNewProjectData(name, start, end, budget, usePreset){
+    return {
+      name: name,
+      startDate: start || null,
+      endDate: end || null,
+      totalBudget: budget,
+      categories: usePreset ? PRESET_CATEGORIES.slice() : [],
+      categoryBudgets: {},
+      thresholds: { warning: 80, danger: 100 },
+      expenses: []
+    };
+  }
 
   /* ===== データ層(複数プロジェクト対応) ===== */
   // ストア形式: { projects: [project, ...], currentProjectId: string }
@@ -1254,25 +1486,18 @@
     const budgetRaw = document.getElementById("onb-budget").value;
 
     if(!name){
-      alert("プロジェクト名を入力してください。");
+      notifyError("プロジェクト名を入力してください。");
       return;
     }
     const budget = Number(budgetRaw);
     if(!budgetRaw || isNaN(budget) || budget < 0){
-      alert("総予算額には0以上の数値を入力してください。");
+      notifyError("総予算額には0以上の数値を入力してください。");
       return;
     }
+    if(!validatePeriod(start, end)) return;
 
-    const project = createProject({
-      name: name,
-      startDate: start || null,
-      endDate: end || null,
-      totalBudget: budget,
-      categories: [],
-      categoryBudgets: {},
-      thresholds: { warning: 80, danger: 100 },
-      expenses: []
-    });
+    const usePreset = document.getElementById("onb-preset").checked;
+    const project = createProject(buildNewProjectData(name, start, end, budget, usePreset));
 
     showMainApp(project);
   });
@@ -1298,13 +1523,14 @@
     const budget = Number(budgetRaw);
 
     if(!name){
-      alert("プロジェクト名を入力してください。");
+      notifyError("プロジェクト名を入力してください。");
       return;
     }
     if(!budgetRaw || isNaN(budget) || budget < 0){
-      alert("総予算額には0以上の数値を入力してください。");
+      notifyError("総予算額には0以上の数値を入力してください。");
       return;
     }
+    if(!validatePeriod(start, end)) return;
 
     project.name = name;
     project.startDate = start || null;
@@ -1313,8 +1539,9 @@
 
     saveProject(project);
     renderTopbar(project);
+    renderCategoryBudgetSettings(project);
     renderDashboard(project);
-    alert("変更を保存しました。");
+    showToast("変更を保存しました。");
   });
 
   /* ===== カテゴリ管理 ===== */
@@ -1368,7 +1595,10 @@
     input.focus();
     input.select();
 
+    let finished = false;
     function commit(){
+      if(finished) return;
+      finished = true;
       const newName = input.value.trim();
       if(newName && newName !== oldName){
         renameCategory(oldName, newName);
@@ -1377,12 +1607,21 @@
         renderCategoryChips(project);
       }
     }
+    function cancel(){
+      if(finished) return;
+      finished = true;
+      const project = loadProject();
+      renderCategoryChips(project);
+    }
     input.addEventListener("blur", commit);
     input.addEventListener("keydown", function(e){
-      if(e.key === "Enter") input.blur();
+      if(e.key === "Enter"){
+        e.preventDefault();
+        commit();
+      }
       if(e.key === "Escape"){
-        const project = loadProject();
-        renderCategoryChips(project);
+        e.preventDefault();
+        cancel();
       }
     });
   }
@@ -1390,8 +1629,13 @@
   function renameCategory(oldName, newName){
     const project = loadProject();
     if(!project) return;
+    if(newName === UNCATEGORIZED){
+      notifyError("「" + UNCATEGORIZED + "」はシステムで使用するため、カテゴリ名にできません。");
+      renderCategoryChips(project);
+      return;
+    }
     if(project.categories.includes(newName)){
-      alert("同じ名前のカテゴリが既に存在します。");
+      notifyError("同じ名前のカテゴリが既に存在します。");
       renderCategoryChips(project);
       return;
     }
@@ -1436,34 +1680,77 @@
     renderDashboard(project);
   }
 
-  document.getElementById("add-category-btn").addEventListener("click", function(){
+  // カテゴリを追加(成功時は true)
+  function addCategory(name){
     const project = loadProject();
-    if(!project) return;
-    const name = newCategoryInput.value.trim();
+    if(!project) return false;
     if(!name){
-      alert("カテゴリ名を入力してください。");
-      return;
+      notifyError("カテゴリ名を入力してください。");
+      return false;
+    }
+    if(name === UNCATEGORIZED){
+      notifyError("「" + UNCATEGORIZED + "」はシステムで使用するため、カテゴリ名にできません。");
+      return false;
     }
     if(project.categories.includes(name)){
-      alert("同じ名前のカテゴリが既に存在します。");
-      return;
+      notifyError("同じ名前のカテゴリが既に存在します。");
+      return false;
     }
     project.categories.push(name);
     saveProject(project);
-    newCategoryInput.value = "";
     renderCategoryChips(project);
     renderCategorySelects(project);
     renderCategoryBudgetSettings(project);
+    renderDashboard(project);
+    return true;
+  }
+
+  document.getElementById("add-category-btn").addEventListener("click", function(){
+    if(addCategory(newCategoryInput.value.trim())){
+      newCategoryInput.value = "";
+      showToast("カテゴリを追加しました。");
+    }
   });
   newCategoryInput.addEventListener("keydown", function(e){
     if(e.key === "Enter") document.getElementById("add-category-btn").click();
   });
 
+  /* ===== 支出フォーム: カテゴリをその場で追加 ===== */
+  const expCatAddRow = document.getElementById("exp-cat-add-row");
+  const expCatAddInput = document.getElementById("exp-cat-add-input");
+  document.getElementById("exp-cat-add-toggle").addEventListener("click", function(){
+    expCatAddRow.classList.toggle("active");
+    if(expCatAddRow.classList.contains("active")) expCatAddInput.focus();
+  });
+  document.getElementById("exp-cat-add-btn").addEventListener("click", function(){
+    const name = expCatAddInput.value.trim();
+    if(addCategory(name)){
+      expCatAddInput.value = "";
+      expCatAddRow.classList.remove("active");
+      document.getElementById("exp-category").value = name;
+      showToast("カテゴリ「" + name + "」を追加しました。");
+    }
+  });
+  expCatAddInput.addEventListener("keydown", function(e){
+    if(e.key === "Enter") document.getElementById("exp-cat-add-btn").click();
+    if(e.key === "Escape") expCatAddRow.classList.remove("active");
+  });
+
+  // 登録済みカテゴリにない支出カテゴリ(「未分類」など)を抽出
+  function getOrphanCategories(project){
+    const set = new Set();
+    project.expenses.forEach(function(e){
+      if(!project.categories.includes(e.category)) set.add(e.category);
+    });
+    return [...set];
+  }
+
   function renderCategorySelects(project){
+    const orphans = getOrphanCategories(project);
     const targets = [
-      { el: document.getElementById("exp-category"), includeAll: false },
-      { el: document.getElementById("edit-category"), includeAll: false },
-      { el: document.getElementById("exp-filter-category"), includeAll: true }
+      { el: document.getElementById("exp-category"), includeAll: false, includeOrphans: false },
+      { el: document.getElementById("edit-category"), includeAll: false, includeOrphans: true },
+      { el: document.getElementById("exp-filter-category"), includeAll: true, includeOrphans: true }
     ];
     targets.forEach(function(t){
       const prevValue = t.el.value;
@@ -1477,10 +1764,11 @@
       if(project.categories.length === 0 && !t.includeAll){
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "（先に設定画面でカテゴリを追加してください）";
+        opt.textContent = "（「＋」からカテゴリを追加してください）";
         t.el.appendChild(opt);
       }
-      project.categories.forEach(function(cat){
+      const cats = t.includeOrphans ? project.categories.concat(orphans) : project.categories;
+      cats.forEach(function(cat){
         const opt = document.createElement("option");
         opt.value = cat;
         opt.textContent = cat;
@@ -1500,6 +1788,7 @@
   const expenseEmptyHint = document.getElementById("expense-empty-hint");
   const expFilterCategory = document.getElementById("exp-filter-category");
   const expFilterSort = document.getElementById("exp-filter-sort");
+  const expSearchInput = document.getElementById("exp-search");
 
   function genId(){
     return "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -1526,19 +1815,19 @@
 
     const amount = Number(amountRaw);
     if(!date){
-      alert("日付を入力してください。");
+      notifyError("日付を入力してください。");
       return;
     }
     if(!amountRaw || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)){
-      alert("金額には1以上の整数を入力してください。");
+      notifyError("金額には1以上の整数を入力してください。");
       return;
     }
     if(!purpose){
-      alert("用途を入力してください。");
+      notifyError("用途を入力してください。");
       return;
     }
     if(!category){
-      alert("カテゴリを選択してください。先に設定画面でカテゴリを登録してください。");
+      notifyError("カテゴリを選択してください。「＋」からカテゴリを追加できます。");
       return;
     }
 
@@ -1553,21 +1842,30 @@
 
     saveProject(project);
 
+    // 日付・カテゴリは連続入力しやすいように保持する
     document.getElementById("exp-amount").value = "";
     document.getElementById("exp-purpose").value = "";
     document.getElementById("exp-memo").value = "";
 
     renderExpenseList(project);
     renderDashboard(project);
+    showToast("「" + purpose + "」（" + formatYen(amount) + "）を登録しました。");
   });
 
   function getSortedFilteredExpenses(project){
     const catFilter = expFilterCategory.value;
     const sortMode = expFilterSort.value;
+    const keyword = expSearchInput.value.trim().toLowerCase();
 
     let list = project.expenses.slice();
     if(catFilter){
       list = list.filter(e => e.category === catFilter);
+    }
+    if(keyword){
+      list = list.filter(e =>
+        (e.purpose || "").toLowerCase().includes(keyword) ||
+        (e.memo || "").toLowerCase().includes(keyword)
+      );
     }
 
     list.sort(function(a, b){
@@ -1584,9 +1882,25 @@
 
   function renderExpenseList(project){
     const list = getSortedFilteredExpenses(project);
+    const colorMap = getCategoryColorMap(project.categories);
     expenseListEl.innerHTML = "";
 
+    const summaryEl = document.getElementById("exp-list-summary");
+    if(project.expenses.length > 0){
+      summaryEl.style.display = "flex";
+      const isFiltered = expFilterCategory.value || expSearchInput.value.trim();
+      document.getElementById("exp-list-count").textContent =
+        (isFiltered ? "絞り込み結果 " : "全 ") + list.length + " 件";
+      document.getElementById("exp-list-total").textContent =
+        formatYen(list.reduce((s, e) => s + e.amount, 0));
+    } else {
+      summaryEl.style.display = "none";
+    }
+
     if(list.length === 0){
+      expenseEmptyHint.textContent = project.expenses.length === 0
+        ? "まだ支出が記録されていません。"
+        : "条件に一致する支出がありません。";
       expenseEmptyHint.style.display = "block";
       return;
     }
@@ -1615,6 +1929,7 @@
       item.querySelector(".purpose").textContent = exp.purpose;
       item.querySelector(".meta").textContent = formatDateShort(exp.date) + " ・ " + exp.category + (exp.memo ? " ・ " + exp.memo : "");
       item.querySelector(".amount").textContent = formatYen(exp.amount);
+      item.querySelector(".cat-dot").style.background = colorMap[exp.category] || UNCATEGORIZED_COLOR;
 
       item.querySelector(".edit-btn").addEventListener("click", function(){
         openEditModal(exp.id);
@@ -1636,14 +1951,19 @@
     if(!ok) return;
     project.expenses = project.expenses.filter(e => e.id !== id);
     saveProject(project);
+    renderCategorySelects(project);
     renderExpenseList(project);
     renderDashboard(project);
+    showToast("支出を削除しました。");
   }
 
   expFilterCategory.addEventListener("change", function(){
     renderExpenseList(loadProject());
   });
   expFilterSort.addEventListener("change", function(){
+    renderExpenseList(loadProject());
+  });
+  expSearchInput.addEventListener("input", function(){
     renderExpenseList(loadProject());
   });
 
@@ -1691,15 +2011,19 @@
     const amount = Number(amountRaw);
 
     if(!date){
-      alert("日付を入力してください。");
+      notifyError("日付を入力してください。");
       return;
     }
     if(!amountRaw || isNaN(amount) || amount <= 0 || !Number.isInteger(amount)){
-      alert("金額には1以上の整数を入力してください。");
+      notifyError("金額には1以上の整数を入力してください。");
       return;
     }
     if(!purpose){
-      alert("用途を入力してください。");
+      notifyError("用途を入力してください。");
+      return;
+    }
+    if(!category){
+      notifyError("カテゴリを選択してください。");
       return;
     }
 
@@ -1711,8 +2035,10 @@
 
     saveProject(project);
     closeEditModal();
+    renderCategorySelects(project);
     renderExpenseList(project);
     renderDashboard(project);
+    showToast("支出を更新しました。");
   });
 
   /* ===== 警告閾値の設定保存 ===== */
@@ -1726,34 +2052,59 @@
     const danger = Number(dangerRaw);
 
     if(!warnRaw || isNaN(warn) || warn <= 0){
-      alert("注意の閾値には1以上の数値を入力してください。");
+      notifyError("注意の閾値には1以上の数値を入力してください。");
       return;
     }
     if(!dangerRaw || isNaN(danger) || danger <= 0){
-      alert("警告の閾値には1以上の数値を入力してください。");
+      notifyError("警告の閾値には1以上の数値を入力してください。");
       return;
     }
     if(warn >= danger){
-      alert("注意の閾値は、警告の閾値より小さい値にしてください。");
+      notifyError("注意の閾値は、警告の閾値より小さい値にしてください。");
       return;
     }
 
     project.thresholds = { warning: warn, danger: danger };
     saveProject(project);
     renderDashboard(project);
-    alert("閾値を保存しました。");
+    showToast("閾値を保存しました。");
   });
 
   /* ===== カテゴリ別予算の設定 ===== */
   const catBudgetSettingsList = document.getElementById("cat-budget-settings-list");
   const catBudgetEmptyHint = document.getElementById("cat-budget-empty-hint");
   const catBudgetSaveBtn = document.getElementById("set-cat-budget-save");
+  const catBudgetBalanceEl = document.getElementById("cat-budget-balance");
+
+  // 入力中のカテゴリ別予算の合計と総予算の差をリアルタイム表示
+  function updateCategoryBudgetBalance(){
+    const project = loadProject();
+    if(!project) return;
+    const inputs = catBudgetSettingsList.querySelectorAll("input");
+    if(inputs.length === 0){
+      catBudgetBalanceEl.style.display = "none";
+      return;
+    }
+    let sum = 0;
+    inputs.forEach(function(input){
+      const v = Number(input.value);
+      if(input.value !== "" && !isNaN(v) && v > 0) sum += v;
+    });
+    const rest = project.totalBudget - sum;
+    catBudgetBalanceEl.style.display = "flex";
+    catBudgetBalanceEl.classList.toggle("over", rest < 0);
+    document.getElementById("cat-budget-sum").textContent = formatYen(sum);
+    document.getElementById("cat-budget-total").textContent = formatYen(project.totalBudget);
+    document.getElementById("cat-budget-rest-label").firstChild.textContent = rest < 0 ? "配分超過 " : "未配分 ";
+    document.getElementById("cat-budget-rest").textContent = formatYen(Math.abs(rest));
+  }
 
   function renderCategoryBudgetSettings(project){
     catBudgetSettingsList.innerHTML = "";
     if(project.categories.length === 0){
       catBudgetEmptyHint.style.display = "block";
       catBudgetSaveBtn.style.display = "none";
+      catBudgetBalanceEl.style.display = "none";
       return;
     }
     catBudgetEmptyHint.style.display = "none";
@@ -1773,8 +2124,10 @@
       if(existing !== undefined && existing !== null){
         input.value = existing;
       }
+      input.addEventListener("input", updateCategoryBudgetBalance);
       catBudgetSettingsList.appendChild(row);
     });
+    updateCategoryBudgetBalance();
   }
 
   catBudgetSaveBtn.addEventListener("click", function(){
@@ -1788,7 +2141,7 @@
       if(raw === "") continue;
       const val = Number(raw);
       if(isNaN(val) || val < 0){
-        alert("カテゴリ別予算には0以上の数値を入力してください。");
+        notifyError("カテゴリ別予算には0以上の数値を入力してください。");
         return;
       }
       newBudgets[input.dataset.category] = val;
@@ -1796,7 +2149,7 @@
     project.categoryBudgets = newBudgets;
     saveProject(project);
     renderDashboard(project);
-    alert("カテゴリ別予算を保存しました。");
+    showToast("カテゴリ別予算を保存しました。");
   });
 
   /* ===== ダッシュボード ===== */
@@ -1890,24 +2243,38 @@
     document.getElementById("pace-budget-pct").textContent = rate.toFixed(1) + "%";
     document.getElementById("pace-days").textContent = elapsedDays + "日 / " + totalDays + "日";
 
-    const perDay = elapsedDays > 0 ? used / elapsedDays : 0;
-    document.getElementById("pace-per-day").textContent = formatYen(Math.round(perDay)) + " /日";
-
-    const forecast = perDay * totalDays;
-    const forecastEl = document.getElementById("pace-forecast");
-    forecastEl.textContent = formatYen(Math.round(forecast));
-    forecastEl.classList.toggle("danger", forecast > project.totalBudget);
-
     const statusEl = document.getElementById("pace-status");
     const statusText = document.getElementById("pace-status-text");
-    const isOverPace = rate > elapsedRate;
+    const forecastEl = document.getElementById("pace-forecast");
     statusEl.classList.remove("ok", "danger");
+
+    // 開始日前: ペース計算ができないため事前支出として表示
+    if(elapsedDays === 0){
+      const daysToStart = Math.round((start - today) / 86400000);
+      document.getElementById("pace-per-day").textContent = "—（開始まであと" + daysToStart + "日）";
+      forecastEl.textContent = used > 0 ? "事前支出 " + formatYen(used) : "—";
+      forecastEl.classList.toggle("danger", used > project.totalBudget);
+      statusEl.classList.add(used > project.totalBudget ? "danger" : "ok");
+      statusText.textContent = "プロジェクト開始前";
+      return;
+    }
+
+    const perDay = used / elapsedDays;
+    document.getElementById("pace-per-day").textContent = formatYen(Math.round(perDay)) + " /日";
+
+    // 期間終了後は実績額をそのまま着地額とする
+    const isFinished = elapsedDays >= totalDays;
+    const forecast = isFinished ? used : perDay * totalDays;
+    forecastEl.textContent = formatYen(Math.round(forecast)) + (isFinished ? "（確定）" : "");
+    forecastEl.classList.toggle("danger", forecast > project.totalBudget);
+
+    const isOverPace = isFinished ? used > project.totalBudget : rate > elapsedRate;
     if(isOverPace){
       statusEl.classList.add("danger");
-      statusText.textContent = "予算超過ペース";
+      statusText.textContent = isFinished ? "期間終了・予算超過" : "予算超過ペース";
     } else {
       statusEl.classList.add("ok");
-      statusText.textContent = "順調なペース";
+      statusText.textContent = isFinished ? "期間終了・予算内" : "順調なペース";
     }
   }
 
@@ -1993,6 +2360,7 @@
   function renderDashboardRecent(project){
     const listEl = document.getElementById("dashboard-recent-list");
     const emptyEl = document.getElementById("dashboard-recent-empty");
+    const colorMap = getCategoryColorMap(project.categories);
     const recent = project.expenses.slice()
       .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))
       .slice(0, 5);
@@ -2017,12 +2385,14 @@
       item.querySelector(".purpose").textContent = exp.purpose;
       item.querySelector(".meta").textContent = formatDateShort(exp.date) + " ・ " + exp.category;
       item.querySelector(".amount").textContent = formatYen(exp.amount);
+      item.querySelector(".cat-dot").style.background = colorMap[exp.category] || UNCATEGORIZED_COLOR;
       listEl.appendChild(item);
     });
   }
 
   /* ===== グラフ: 共通カラーパレット ===== */
   const CHART_PALETTE = ["#2D6A4F","#D97706","#3B82F6","#9333EA","#DC2626","#0D9488","#CA8A04","#DB2777","#6366F1","#65A30D"];
+  const UNCATEGORIZED_COLOR = "#9CA3AF";
 
   function getCategoryColorMap(categories){
     const map = {};
@@ -2054,8 +2424,9 @@
 
     const colorMap = getCategoryColorMap(project.categories);
     function colorFor(cat){
-      return colorMap[cat] || "#9CA3AF"; // 未分類等はグレー
+      return colorMap[cat] || UNCATEGORIZED_COLOR; // 未分類等はグレー
     }
+    document.getElementById("pie-center-total").textContent = formatYen(grandTotal);
 
     // Canvas描画(高DPI対応)
     const dpr = window.devicePixelRatio || 1;
@@ -2103,8 +2474,10 @@
       row.innerHTML =
         '<span class="dot" style="background:' + colorFor(cat) + '"></span>' +
         '<span class="lg-name"></span>' +
+        '<span class="lg-amt num"></span>' +
         '<span class="lg-pct num"></span>';
       row.querySelector(".lg-name").textContent = cat;
+      row.querySelector(".lg-amt").textContent = formatYen(amount);
       row.querySelector(".lg-pct").textContent = pct + "%";
       legendEl.appendChild(row);
     });
@@ -2171,7 +2544,13 @@
 
     const dpr = window.devicePixelRatio || 1;
     const cssWidth = canvas.parentElement.clientWidth - 36; // カードのpadding分を考慮
-    const cssHeight = 160;
+    // ダッシュボードが非表示(別タブ表示中)だと幅が0になるため、表示時に再描画する
+    if(cssWidth <= 0){
+      barChartNeedsRedraw = true;
+      return;
+    }
+    barChartNeedsRedraw = false;
+    const cssHeight = 170;
     canvas.width = cssWidth * dpr;
     canvas.height = cssHeight * dpr;
     canvas.style.width = cssWidth + "px";
@@ -2181,13 +2560,19 @@
     ctx.clearRect(0, 0, cssWidth, cssHeight);
 
     const maxVal = Math.max(...shownKeys.map(k => buckets[k].total));
-    const padBottom = 22, padTop = 10;
+    const padBottom = 22, padTop = 18; // 上部に金額ラベル分の余白
     const chartH = cssHeight - padBottom - padTop;
     const barAreaW = cssWidth / shownKeys.length;
     const barW = Math.min(barAreaW * 0.5, 34);
 
     ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.textAlign = "center";
+
+    // 金額ラベルは幅に合わせて「万」表記に短縮
+    function shortYen(n){
+      if(n >= 10000) return (Math.round(n / 1000) / 10) + "万";
+      return n.toLocaleString("ja-JP");
+    }
 
     shownKeys.forEach(function(key, i){
       const bucket = buckets[key];
@@ -2209,8 +2594,23 @@
 
       ctx.fillStyle = "#6B7280";
       ctx.fillText(bucket.label, x + barW / 2, cssHeight - 6);
+
+      ctx.fillStyle = "#1F2937";
+      ctx.font = "bold 10.5px -apple-system, BlinkMacSystemFont, sans-serif";
+      ctx.fillText(shortYen(bucket.total), x + barW / 2, y - 5);
+      ctx.font = "11px -apple-system, BlinkMacSystemFont, sans-serif";
     });
   }
+
+  let barChartNeedsRedraw = false;
+  let resizeTimer = null;
+  window.addEventListener("resize", function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      const project = loadProject();
+      if(project && mainAppEl.style.display !== "none") renderBarChart(project);
+    }, 150);
+  });
 
   document.getElementById("bar-period-toggle").addEventListener("click", function(e){
     const btn = e.target.closest("button[data-period]");
@@ -2296,25 +2696,18 @@
     const budgetRaw = document.getElementById("np-budget").value;
 
     if(!name){
-      alert("プロジェクト名を入力してください。");
+      notifyError("プロジェクト名を入力してください。");
       return;
     }
     const budget = Number(budgetRaw);
     if(!budgetRaw || isNaN(budget) || budget < 0){
-      alert("総予算額には0以上の数値を入力してください。");
+      notifyError("総予算額には0以上の数値を入力してください。");
       return;
     }
+    if(!validatePeriod(start, end)) return;
 
-    const project = createProject({
-      name: name,
-      startDate: start || null,
-      endDate: end || null,
-      totalBudget: budget,
-      categories: [],
-      categoryBudgets: {},
-      thresholds: { warning: 80, danger: 100 },
-      expenses: []
-    });
+    const usePreset = document.getElementById("np-preset").checked;
+    const project = createProject(buildNewProjectData(name, start, end, budget, usePreset));
 
     document.getElementById("np-name").value = "";
     document.getElementById("np-start").value = "";
@@ -2323,6 +2716,7 @@
 
     showMainApp(project);
     goToScreen("dashboard");
+    showToast("プロジェクト「" + name + "」を作成しました。");
   });
 
   /* ===== トップバー: プロジェクト名タップで一覧へ ===== */
@@ -2341,6 +2735,11 @@
     if(screenEl) screenEl.classList.add("active");
 
     if(target === "projects") renderProjectList();
+    if(target === "dashboard" && barChartNeedsRedraw){
+      const project = loadProject();
+      if(project) renderBarChart(project);
+    }
+    window.scrollTo(0, 0);
   }
 
   /* ===== 下部ナビゲーション: 画面切替 ===== */
@@ -2350,8 +2749,117 @@
     goToScreen(btn.dataset.target);
   });
 
+  /* ===== データ管理: CSV出力 / JSONバックアップ・復元 ===== */
+  function downloadFile(filename, content, mime){
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function safeFileName(s){
+    return String(s).replace(/[\\/:*?"<>|]/g, "_");
+  }
+
+  function csvCell(v){
+    const s = String(v == null ? "" : v);
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  document.getElementById("export-csv").addEventListener("click", function(){
+    const project = loadProject();
+    if(!project) return;
+    if(project.expenses.length === 0){
+      notifyError("出力する支出がありません。");
+      return;
+    }
+    const rows = [["日付", "金額", "用途", "カテゴリ", "メモ"]];
+    project.expenses.slice()
+      .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+      .forEach(function(e){
+        rows.push([e.date, e.amount, e.purpose, e.category, e.memo || ""]);
+      });
+    // Excelで文字化けしないようBOM付きUTF-8で出力
+    const csv = "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+    downloadFile(safeFileName(project.name) + "_支出_" + todayStr() + ".csv", csv, "text/csv;charset=utf-8");
+    showToast("CSVを出力しました。");
+  });
+
+  document.getElementById("export-json").addEventListener("click", function(){
+    const store = loadStore();
+    if(!store) return;
+    const payload = { app: "budgetApp", version: 2, exportedAt: new Date().toISOString(), store: store };
+    downloadFile("budget_backup_" + todayStr() + ".json", JSON.stringify(payload, null, 2), "application/json");
+    showToast("バックアップを保存しました。");
+  });
+
+  const importFileInput = document.getElementById("import-json-file");
+  document.getElementById("import-json-btn").addEventListener("click", function(){
+    importFileInput.value = "";
+    importFileInput.click();
+  });
+
+  // 読み込んだプロジェクトの欠損項目を補完し、不正なデータを弾く
+  function normalizeProject(p){
+    if(!p || typeof p !== "object" || typeof p.name !== "string") return null;
+    return {
+      id: typeof p.id === "string" ? p.id : genProjectId(),
+      name: p.name,
+      startDate: p.startDate || null,
+      endDate: p.endDate || null,
+      totalBudget: Number(p.totalBudget) || 0,
+      categories: Array.isArray(p.categories) ? p.categories.filter(c => typeof c === "string") : [],
+      categoryBudgets: (p.categoryBudgets && typeof p.categoryBudgets === "object") ? p.categoryBudgets : {},
+      thresholds: (p.thresholds && p.thresholds.warning && p.thresholds.danger) ? p.thresholds : { warning: 80, danger: 100 },
+      expenses: Array.isArray(p.expenses) ? p.expenses.filter(e =>
+        e && typeof e.date === "string" && Number.isFinite(Number(e.amount))
+      ).map(e => ({
+        id: typeof e.id === "string" ? e.id : genId(),
+        date: e.date,
+        amount: Number(e.amount),
+        purpose: String(e.purpose || ""),
+        category: String(e.category || UNCATEGORIZED),
+        memo: String(e.memo || "")
+      })) : []
+    };
+  }
+
+  importFileInput.addEventListener("change", function(){
+    const file = importFileInput.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(){
+      try{
+        const data = JSON.parse(reader.result);
+        const rawStore = data && data.store ? data.store : data;
+        if(!rawStore || !Array.isArray(rawStore.projects)) throw new Error("invalid format");
+        const projects = rawStore.projects.map(normalizeProject).filter(Boolean);
+        if(projects.length === 0) throw new Error("no projects");
+
+        const ok = confirm("バックアップ（" + projects.length + " 件のプロジェクト）から復元します。現在のデータはすべて置き換わります。よろしいですか？");
+        if(!ok) return;
+
+        const currentId = projects.some(p => p.id === rawStore.currentProjectId) ? rawStore.currentProjectId : projects[0].id;
+        saveStore({ projects: projects, currentProjectId: currentId });
+        showMainApp(loadProject());
+        goToScreen("dashboard");
+        showToast("バックアップから復元しました。");
+      }catch(e){
+        console.error(e);
+        notifyError("バックアップファイルの読み込みに失敗しました。形式を確認してください。");
+      }
+    };
+    reader.readAsText(file);
+  });
+
   /* ===== 初期化 ===== */
   function init(){
+    document.getElementById("exp-date").value = todayStr();
     const project = loadProject();
     if(project){
       showMainApp(project);
@@ -2361,6 +2869,17 @@
   }
 
   init();
+
+  /* ===== Service Worker 登録 (PWA対応) ===== */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').then(function(reg){
+        console.log('ServiceWorker registered with scope:', reg.scope);
+      }).catch(function(err){
+        console.warn('ServiceWorker registration failed:', err);
+      });
+    });
+  }
 })();
 </script>
 

@@ -1,8 +1,9 @@
 {
+  "id": "budget-manager-v2",
   "name": "予算マネージャー",
   "short_name": "予算管理",
   "description": "プロジェクトの予算・支出をひと目で管理できるアプリ",
-  "start_url": "./",
+  "start_url": "./?v=2",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

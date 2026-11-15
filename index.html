@@ -554,12 +554,14 @@
   .pace-detail-row{
     display:flex;
     justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
     font-size:12.5px;
     padding:8px 0;
     border-top:1px solid var(--border);
   }
-  .pace-detail-row .k{ color:var(--text-sub); }
-  .pace-detail-row .v{ font-weight:700; }
+  .pace-detail-row .k{ color:var(--text-sub); flex-shrink:0; white-space:nowrap; }
+  .pace-detail-row .v{ font-weight:700; text-align:right; }
   .pace-detail-row .v.danger{ color:var(--danger); }
 
   /* ===== カテゴリ別ミニゲージ ===== */
@@ -2704,7 +2706,7 @@
     // 初期段階(経過3日未満かつ期間全体の20%未満)は一時支出による予測暴騰を抑える
     const isEarlyStage = !isFinished && elapsedDays < 3 && elapsedRate < 20;
     if(isEarlyStage && used > 0 && used <= project.totalBudget){
-      forecastEl.textContent = "データ蓄積中（参考値: " + formatYen(Math.round(forecast)) + "）";
+      forecastEl.textContent = "データ蓄積中（計測中）";
       forecastEl.classList.remove("danger");
       statusEl.classList.add("ok");
       statusText.textContent = "データ蓄積中（初期段階）";
@@ -3382,7 +3384,7 @@
   /* ===== Service Worker 登録 (PWA対応・自動更新チェック) ===== */
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('./sw.js?v=5', { updateViaCache: 'none' }).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=6', { updateViaCache: 'none' }).then(function(reg){
         console.log('ServiceWorker registered with scope:', reg.scope);
         document.addEventListener('visibilitychange', function(){
           if(document.visibilityState === 'visible') reg.update();

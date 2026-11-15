@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budget-app-v2';
+const CACHE_NAME = 'budget-app-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const ASSETS_TO_CACHE = [
   './apple-touch-icon.png'
 ];
 
-// インストール時にキャッシュ
+// インストール時にキャッシュし、即座に待機状態をスキップして有効化
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 新しいService Workerがアクティブ化されたら古いキャッシュを削除
+// 新しいService Workerがアクティブ化されたら古いキャッシュを削除して即座に制御開始
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -33,15 +33,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// リクエスト時のキャッシュ応答（Network FirstまたはStale While Revalidate）
-// オフラインでも起動できるようキャッシュを優先しつつネットワークを試行
+// ネットワーク優先（Network First）：オンライン時は常にVercelの最新配信を取得してキャッシュを更新し、オフライン時はキャッシュから応答
 self.addEventListener('fetch', (event) => {
-  // GETリクエストのみキャッシュ
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
+    fetch(event.request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -49,12 +47,9 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // オフライン時はキャッシュを返す
-        return cachedResponse;
-      });
-
-      return cachedResponse || fetchPromise;
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
   );
 });

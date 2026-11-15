@@ -802,10 +802,27 @@
     transform:translateY(8px);
     transition:opacity 0.2s ease, transform 0.2s ease;
     text-align:center;
+    pointer-events:auto;
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
   }
   .toast.show{ opacity:1; transform:translateY(0); }
   .toast.success{ background:var(--accent); }
   .toast.error{ background:var(--danger); }
+  .toast-undo-btn{
+    background:rgba(255,255,255,0.18);
+    color:#fff;
+    border:1px solid rgba(255,255,255,0.4);
+    border-radius:6px;
+    padding:3px 9px;
+    font-size:12px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .toast-undo-btn:hover{ background:rgba(255,255,255,0.28); }
 
   /* ===== 円グラフ中央ラベル ===== */
   .pie-wrap{
@@ -905,6 +922,168 @@
     line-height:1.6;
   }
   button:disabled{ cursor:not-allowed; }
+
+  /* ===== クイック金額ボタン ===== */
+  .quick-amounts{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:8px;
+  }
+  .quick-amounts button{
+    border:1px solid var(--border);
+    background:var(--bg);
+    color:var(--text);
+    font-family:inherit;
+    font-size:11.5px;
+    font-weight:600;
+    padding:4px 9px;
+    border-radius:999px;
+    cursor:pointer;
+    transition:background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .quick-amounts button:hover{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .quick-amounts button:active{ opacity:0.75; }
+  .quick-amounts button.qa-clear{
+    color:var(--text-sub);
+  }
+
+  /* ===== 確定 / 予定ステータス切替・バッジ ===== */
+  .status-seg{
+    width:100%;
+  }
+  .status-seg button{
+    flex:1;
+    padding:8px 10px;
+    font-size:12.5px;
+  }
+  .status-badge{
+    display:inline-flex;
+    align-items:center;
+    font-size:10.5px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:999px;
+    margin-left:6px;
+    vertical-align:middle;
+    flex-shrink:0;
+  }
+  .status-badge.planned{
+    background:var(--warn-soft);
+    color:var(--warn);
+    border:1px solid rgba(217,119,6,0.3);
+  }
+  .expense-item.is-planned{
+    border-style:dashed;
+    background:#FCFBF9;
+  }
+  .expense-item.clickable{
+    cursor:pointer;
+    transition:background-color 0.15s ease, transform 0.1s ease;
+  }
+  .expense-item.clickable:hover{
+    background:var(--bg);
+  }
+  .expense-item.clickable:active{
+    transform:scale(0.99);
+  }
+  .legend-row.clickable{
+    cursor:pointer;
+    padding:3px 6px;
+    margin:-3px -6px;
+    border-radius:6px;
+    transition:background-color 0.15s ease;
+  }
+  .legend-row.clickable:hover{
+    background:var(--bg);
+  }
+
+  /* ===== サマリー補助表示＆2段階ゲージ ===== */
+  .summary-item .sub-value{
+    font-size:11px;
+    color:var(--text-sub);
+    margin-top:3px;
+    font-weight:600;
+  }
+  .gauge-track{
+    display:flex;
+  }
+  .gauge-fill{
+    border-radius:0;
+    flex-shrink:0;
+  }
+  .gauge-fill-planned{
+    height:100%;
+    width:0%;
+    flex-shrink:0;
+    background:repeating-linear-gradient(
+      -45deg,
+      rgba(45,106,79,0.35),
+      rgba(45,106,79,0.35) 5px,
+      rgba(45,106,79,0.15) 5px,
+      rgba(45,106,79,0.15) 10px
+    );
+    transition:width 0.4s ease;
+  }
+  .gauge-fill-planned.warn{
+    background:repeating-linear-gradient(
+      -45deg,
+      rgba(217,119,6,0.4),
+      rgba(217,119,6,0.4) 5px,
+      rgba(217,119,6,0.18) 5px,
+      rgba(217,119,6,0.18) 10px
+    );
+  }
+  .gauge-fill-planned.danger{
+    background:repeating-linear-gradient(
+      -45deg,
+      rgba(220,38,38,0.4),
+      rgba(220,38,38,0.4) 5px,
+      rgba(220,38,38,0.18) 5px,
+      rgba(220,38,38,0.18) 10px
+    );
+  }
+
+  /* ===== バックアップリマインドカード ===== */
+  .backup-reminder-card{
+    background:var(--accent-soft);
+    border:1px solid rgba(45,106,79,0.25);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .backup-reminder-card .br-text{
+    font-size:12.5px;
+    line-height:1.45;
+    color:var(--text);
+  }
+  .backup-reminder-card .br-title{
+    font-weight:700;
+    color:var(--accent);
+    margin-bottom:2px;
+  }
+  .backup-reminder-card .br-btn{
+    flex-shrink:0;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:700;
+    font-family:inherit;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .backup-reminder-card .br-btn:active{ opacity:0.85; }
 </style>
 </head>
 <body>
@@ -972,23 +1151,27 @@
             <div class="summary-item">
               <div class="label">使用済み</div>
               <div class="value num" id="sum-used">¥0</div>
+              <div class="sub-value num" id="sum-used-sub" style="display:none;"></div>
             </div>
             <div class="summary-item">
               <div class="label">残予算</div>
               <div class="value num accent" id="sum-remaining">¥0</div>
+              <div class="sub-value num" id="sum-remaining-sub" style="display:none;"></div>
             </div>
             <div class="summary-item">
               <div class="label">消化率</div>
               <div class="value num" id="sum-rate">0%</div>
+              <div class="sub-value num" id="sum-rate-sub" style="display:none;"></div>
             </div>
           </div>
 
           <div class="gauge-wrap">
             <div class="gauge-track">
               <div class="gauge-fill" id="budget-gauge-fill"></div>
+              <div class="gauge-fill-planned" id="budget-gauge-planned"></div>
             </div>
             <div class="gauge-labels">
-              <span>予算消化率</span>
+              <span id="budget-gauge-label-text">予算消化率</span>
               <span class="pct num" id="budget-gauge-pct">0%</span>
             </div>
           </div>
@@ -1046,6 +1229,10 @@
             <span class="v num" id="pace-days"></span>
           </div>
           <div class="pace-detail-row">
+            <span class="k">残り日数 / 1日あたり使える残予算</span>
+            <span class="v num" id="pace-remaining-allowance"></span>
+          </div>
+          <div class="pace-detail-row">
             <span class="k">1日あたりの消化ペース</span>
             <span class="v num" id="pace-per-day"></span>
           </div>
@@ -1065,6 +1252,14 @@
           <div class="expense-list" id="dashboard-recent-list"></div>
           <div class="empty-hint" id="dashboard-recent-empty" style="display:none;">まだ支出が記録されていません。</div>
         </div>
+
+        <div class="backup-reminder-card" id="backup-reminder-card" style="display:none;">
+          <div class="br-text">
+            <div class="br-title">データのバックアップを保存しませんか？</div>
+            <div id="backup-reminder-desc">万が一のデータ消失に備えて、バックアップファイルの保存をおすすめします。</div>
+          </div>
+          <button type="button" class="br-btn" id="remind-backup-btn">バックアップ保存</button>
+        </div>
       </section>
 
 
@@ -1083,11 +1278,24 @@
             <div>
               <label for="exp-amount">金額（円） <span style="color:var(--danger)">*</span></label>
               <input type="number" id="exp-amount" min="1" step="1" placeholder="例：12000">
+              <div class="quick-amounts" id="exp-quick-amounts">
+                <button type="button" data-add="1000">+1,000</button>
+                <button type="button" data-add="5000">+5,000</button>
+                <button type="button" data-add="10000">+10,000</button>
+                <button type="button" data-clear="true" class="qa-clear">クリア</button>
+              </div>
             </div>
           </div>
 
           <label for="exp-purpose">用途 <span style="color:var(--danger)">*</span></label>
-          <input type="text" id="exp-purpose" placeholder="例：合板材料の購入">
+          <input type="text" id="exp-purpose" list="purpose-history-list" placeholder="例：合板材料の購入">
+          <datalist id="purpose-history-list"></datalist>
+
+          <label>ステータス</label>
+          <div class="seg-control status-seg" id="exp-status-toggle">
+            <button type="button" data-status="paid" class="active">支払い済み（確定）</button>
+            <button type="button" data-status="planned">予定（見込み）</button>
+          </div>
 
           <label for="exp-category">カテゴリ <span style="color:var(--danger)">*</span></label>
           <div class="select-with-btn">
@@ -1279,7 +1487,13 @@
       </div>
 
       <label for="edit-purpose">用途</label>
-      <input type="text" id="edit-purpose">
+      <input type="text" id="edit-purpose" list="purpose-history-list">
+
+      <label>ステータス</label>
+      <div class="seg-control status-seg" id="edit-status-toggle">
+        <button type="button" data-status="paid" class="active">支払い済み（確定）</button>
+        <button type="button" data-status="planned">予定（見込み）</button>
+      </div>
 
       <label for="edit-category">カテゴリ</label>
       <select id="edit-category"></select>
@@ -1310,18 +1524,48 @@
 
   /* ===== 共通ヘルパー ===== */
   const toastWrap = document.getElementById("toast-wrap");
-  function showToast(message, type){
+  function showToast(message, type, options){
     const el = document.createElement("div");
     el.className = "toast " + (type || "success");
-    el.textContent = message;
-    toastWrap.appendChild(el);
-    requestAnimationFrame(function(){ el.classList.add("show"); });
-    setTimeout(function(){
+    const span = document.createElement("span");
+    span.textContent = message;
+    el.appendChild(span);
+
+    const duration = (options && options.duration) ? options.duration : (type === "error" ? 3200 : 2200);
+    let dismissed = false;
+    function dismiss(){
+      if(dismissed) return;
+      dismissed = true;
       el.classList.remove("show");
       setTimeout(function(){ el.remove(); }, 250);
-    }, type === "error" ? 3200 : 2200);
+    }
+
+    if(options && typeof options.onAction === "function"){
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toast-undo-btn";
+      btn.textContent = options.actionLabel || "元に戻す";
+      btn.addEventListener("click", function(){
+        dismiss();
+        options.onAction();
+      });
+      el.appendChild(btn);
+    }
+
+    toastWrap.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add("show"); });
+    setTimeout(dismiss, duration);
   }
   function notifyError(message){ showToast(message, "error"); }
+
+  function isPlannedExpense(exp){
+    return Boolean(exp && exp.status === "planned");
+  }
+
+  function getTotalExpenseCount(store){
+    if(!store || !Array.isArray(store.projects)) return 0;
+    return store.projects.reduce((sum, p) => sum + (Array.isArray(p.expenses) ? p.expenses.length : 0), 0);
+  }
 
   function todayStr(){
     const d = new Date();
@@ -1360,7 +1604,17 @@
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
       if(raw){
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if(parsed && Array.isArray(parsed.projects)){
+          parsed.projects.forEach(function(p){
+            if(Array.isArray(p.expenses)){
+              p.expenses.forEach(function(e){
+                if(!e.status) e.status = "paid";
+              });
+            }
+          });
+        }
+        return parsed;
       }
       // 旧バージョン(単一プロジェクト)からの自動移行
       const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -1466,6 +1720,7 @@
     fillSettingsForm(project);
     renderCategoryChips(project);
     renderCategorySelects(project);
+    renderPurposeDatalist(project);
     renderExpenseList(project);
     renderCategoryBudgetSettings(project);
     renderDashboard(project);
@@ -1502,7 +1757,7 @@
     showMainApp(project);
   });
 
-  /* ===== 設定画面: プロジェクト編集 ===== */
+  /* ===== 設定画面: プロジェクト設定・閾値・カテゴリ別予算の統合保存 ===== */
   function fillSettingsForm(project){
     document.getElementById("set-name").value = project.name;
     document.getElementById("set-start").value = project.startDate || "";
@@ -1512,10 +1767,11 @@
     document.getElementById("set-danger-threshold").value = project.thresholds.danger;
   }
 
-  document.getElementById("set-save").addEventListener("click", function(){
+  function saveAllSettings(toastMessage){
     const project = loadProject();
-    if(!project) return;
+    if(!project) return false;
 
+    // 1. プロジェクト基本設定の検証
     const name = document.getElementById("set-name").value.trim();
     const start = document.getElementById("set-start").value;
     const end = document.getElementById("set-end").value;
@@ -1524,24 +1780,68 @@
 
     if(!name){
       notifyError("プロジェクト名を入力してください。");
-      return;
+      return false;
     }
-    if(!budgetRaw || isNaN(budget) || budget < 0){
+    if(budgetRaw === "" || isNaN(budget) || budget < 0){
       notifyError("総予算額には0以上の数値を入力してください。");
-      return;
+      return false;
     }
-    if(!validatePeriod(start, end)) return;
+    if(!validatePeriod(start, end)) return false;
 
+    // 2. 警告閾値の検証
+    const warnRaw = document.getElementById("set-warn-threshold").value;
+    const dangerRaw = document.getElementById("set-danger-threshold").value;
+    const warn = Number(warnRaw);
+    const danger = Number(dangerRaw);
+
+    if(!warnRaw || isNaN(warn) || warn <= 0){
+      notifyError("注意の閾値には1以上の数値を入力してください。");
+      return false;
+    }
+    if(!dangerRaw || isNaN(danger) || danger <= 0){
+      notifyError("警告の閾値には1以上の数値を入力してください。");
+      return false;
+    }
+    if(warn >= danger){
+      notifyError("注意の閾値は、警告の閾値より小さい値にしてください。");
+      return false;
+    }
+
+    // 3. カテゴリ別予算の検証
+    const inputs = document.getElementById("cat-budget-settings-list").querySelectorAll("input");
+    const newBudgets = {};
+    for(const input of inputs){
+      const raw = input.value;
+      if(raw === "") continue;
+      const val = Number(raw);
+      if(isNaN(val) || val < 0){
+        notifyError("カテゴリ別予算には0以上の数値を入力してください。");
+        return false;
+      }
+      newBudgets[input.dataset.category] = val;
+    }
+
+    // すべて問題なければ一括反映して保存
     project.name = name;
     project.startDate = start || null;
     project.endDate = end || null;
     project.totalBudget = budget;
+    project.thresholds = { warning: warn, danger: danger };
+    project.categoryBudgets = newBudgets;
 
     saveProject(project);
     renderTopbar(project);
-    renderCategoryBudgetSettings(project);
+    updateCategoryBudgetBalance();
     renderDashboard(project);
-    showToast("変更を保存しました。");
+    showToast(toastMessage || "設定を保存しました。");
+    return true;
+  }
+
+  document.getElementById("set-save").addEventListener("click", function(){
+    saveAllSettings("変更を保存しました。");
+  });
+  document.getElementById("set-budget").addEventListener("input", function(){
+    updateCategoryBudgetBalance();
   });
 
   /* ===== カテゴリ管理 ===== */
@@ -1789,6 +2089,10 @@
   const expFilterCategory = document.getElementById("exp-filter-category");
   const expFilterSort = document.getElementById("exp-filter-sort");
   const expSearchInput = document.getElementById("exp-search");
+  const purposeHistoryList = document.getElementById("purpose-history-list");
+  const expStatusToggle = document.getElementById("exp-status-toggle");
+  const editStatusToggle = document.getElementById("edit-status-toggle");
+  let lastDeletedExpense = null;
 
   function genId(){
     return "exp_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
@@ -1803,6 +2107,63 @@
     return d.replaceAll("-", "/");
   }
 
+  // 過去の用途履歴からユニークな候補を抽出して datalist に反映
+  function renderPurposeDatalist(project){
+    if(!purposeHistoryList) return;
+    purposeHistoryList.innerHTML = "";
+    if(!project || !Array.isArray(project.expenses)) return;
+    const seen = new Set();
+    // 直近の支出から優先して候補に追加
+    const sorted = project.expenses.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+    sorted.forEach(function(e){
+      const p = (e.purpose || "").trim();
+      if(p && !seen.has(p)){
+        seen.add(p);
+        const opt = document.createElement("option");
+        opt.value = p;
+        purposeHistoryList.appendChild(opt);
+      }
+    });
+  }
+
+  // クイック金額加算ボタン
+  document.getElementById("exp-quick-amounts").addEventListener("click", function(e){
+    const btn = e.target.closest("button");
+    if(!btn) return;
+    const amountInput = document.getElementById("exp-amount");
+    if(btn.dataset.clear){
+      amountInput.value = "";
+      amountInput.focus();
+      return;
+    }
+    const addVal = Number(btn.dataset.add);
+    if(!isNaN(addVal) && addVal > 0){
+      const current = Number(amountInput.value);
+      amountInput.value = (amountInput.value !== "" && !isNaN(current) && current > 0) ? (current + addVal) : addVal;
+    }
+  });
+
+  // ステータス切替ヘルパー
+  function bindStatusToggle(container){
+    container.addEventListener("click", function(e){
+      const btn = e.target.closest("button[data-status]");
+      if(!btn) return;
+      setStatusValue(container, btn.dataset.status);
+    });
+  }
+  function setStatusValue(container, status){
+    const target = status === "planned" ? "planned" : "paid";
+    container.querySelectorAll("button[data-status]").forEach(function(b){
+      b.classList.toggle("active", b.dataset.status === target);
+    });
+  }
+  function getStatusValue(container){
+    const active = container.querySelector("button[data-status].active");
+    return (active && active.dataset.status === "planned") ? "planned" : "paid";
+  }
+  bindStatusToggle(expStatusToggle);
+  bindStatusToggle(editStatusToggle);
+
   document.getElementById("exp-submit").addEventListener("click", function(){
     const project = loadProject();
     if(!project) return;
@@ -1812,6 +2173,7 @@
     const purpose = document.getElementById("exp-purpose").value.trim();
     const category = document.getElementById("exp-category").value;
     const memo = document.getElementById("exp-memo").value.trim();
+    const status = getStatusValue(expStatusToggle);
 
     const amount = Number(amountRaw);
     if(!date){
@@ -1837,7 +2199,8 @@
       amount: amount,
       purpose: purpose,
       category: category,
-      memo: memo
+      memo: memo,
+      status: status
     });
 
     saveProject(project);
@@ -1847,9 +2210,10 @@
     document.getElementById("exp-purpose").value = "";
     document.getElementById("exp-memo").value = "";
 
+    renderPurposeDatalist(project);
     renderExpenseList(project);
     renderDashboard(project);
-    showToast("「" + purpose + "」（" + formatYen(amount) + "）を登録しました。");
+    showToast("「" + purpose + "」（" + formatYen(amount) + (status === "planned" ? "・予定" : "") + "）を登録しました。");
   });
 
   function getSortedFilteredExpenses(project){
@@ -1907,13 +2271,16 @@
     expenseEmptyHint.style.display = "none";
 
     list.forEach(function(exp){
+      const planned = isPlannedExpense(exp);
       const item = document.createElement("div");
-      item.className = "expense-item";
+      item.className = "expense-item" + (planned ? " is-planned" : "");
 
       item.innerHTML =
         '<span class="cat-dot"></span>' +
         '<div class="info">' +
-          '<div class="purpose"></div>' +
+          '<div class="purpose"><span class="purpose-text"></span>' +
+            (planned ? '<span class="status-badge planned">予定</span>' : '') +
+          '</div>' +
           '<div class="meta"></div>' +
         '</div>' +
         '<div class="amount num"></div>' +
@@ -1926,7 +2293,7 @@
           '</button>' +
         '</div>';
 
-      item.querySelector(".purpose").textContent = exp.purpose;
+      item.querySelector(".purpose-text").textContent = exp.purpose;
       item.querySelector(".meta").textContent = formatDateShort(exp.date) + " ・ " + exp.category + (exp.memo ? " ・ " + exp.memo : "");
       item.querySelector(".amount").textContent = formatYen(exp.amount);
       item.querySelector(".cat-dot").style.background = colorMap[exp.category] || UNCATEGORIZED_COLOR;
@@ -1945,16 +2312,54 @@
   function deleteExpense(id){
     const project = loadProject();
     if(!project) return;
-    const target = project.expenses.find(e => e.id === id);
-    if(!target) return;
-    const ok = confirm("「" + target.purpose + "」（" + formatYen(target.amount) + "）を削除しますか？");
-    if(!ok) return;
-    project.expenses = project.expenses.filter(e => e.id !== id);
+    const idx = project.expenses.findIndex(e => e.id === id);
+    if(idx === -1) return;
+    const target = project.expenses[idx];
+
+    lastDeletedExpense = {
+      projectId: project.id,
+      expense: Object.assign({}, target),
+      index: idx
+    };
+
+    project.expenses.splice(idx, 1);
     saveProject(project);
     renderCategorySelects(project);
+    renderPurposeDatalist(project);
     renderExpenseList(project);
     renderDashboard(project);
-    showToast("支出を削除しました。");
+
+    showToast("支出を削除しました", "success", {
+      duration: 5000,
+      actionLabel: "元に戻す",
+      onAction: undoDeleteExpense
+    });
+  }
+
+  function undoDeleteExpense(){
+    if(!lastDeletedExpense) return;
+    const backup = lastDeletedExpense;
+    lastDeletedExpense = null;
+
+    const store = loadStore();
+    if(!store) return;
+    const targetProj = store.projects.find(p => p.id === backup.projectId);
+    if(!targetProj) return;
+
+    if(!targetProj.expenses.some(e => e.id === backup.expense.id)){
+      const insertPos = Math.min(Math.max(0, backup.index), targetProj.expenses.length);
+      targetProj.expenses.splice(insertPos, 0, backup.expense);
+      saveStore(store);
+    }
+
+    const currentProject = loadProject();
+    if(currentProject){
+      renderCategorySelects(currentProject);
+      renderPurposeDatalist(currentProject);
+      renderExpenseList(currentProject);
+      renderDashboard(currentProject);
+    }
+    showToast("支出の削除を取り消しました。");
   }
 
   expFilterCategory.addEventListener("change", function(){
@@ -1982,6 +2387,7 @@
     document.getElementById("edit-purpose").value = exp.purpose;
     document.getElementById("edit-category").value = exp.category;
     document.getElementById("edit-memo").value = exp.memo || "";
+    setStatusValue(editStatusToggle, exp.status || "paid");
 
     editModalOverlay.classList.add("active");
   }
@@ -2008,6 +2414,7 @@
     const purpose = document.getElementById("edit-purpose").value.trim();
     const category = document.getElementById("edit-category").value;
     const memo = document.getElementById("edit-memo").value.trim();
+    const status = getStatusValue(editStatusToggle);
     const amount = Number(amountRaw);
 
     if(!date){
@@ -2032,10 +2439,12 @@
     exp.purpose = purpose;
     exp.category = category;
     exp.memo = memo;
+    exp.status = status;
 
     saveProject(project);
     closeEditModal();
     renderCategorySelects(project);
+    renderPurposeDatalist(project);
     renderExpenseList(project);
     renderDashboard(project);
     showToast("支出を更新しました。");
@@ -2043,31 +2452,7 @@
 
   /* ===== 警告閾値の設定保存 ===== */
   document.getElementById("set-threshold-save").addEventListener("click", function(){
-    const project = loadProject();
-    if(!project) return;
-
-    const warnRaw = document.getElementById("set-warn-threshold").value;
-    const dangerRaw = document.getElementById("set-danger-threshold").value;
-    const warn = Number(warnRaw);
-    const danger = Number(dangerRaw);
-
-    if(!warnRaw || isNaN(warn) || warn <= 0){
-      notifyError("注意の閾値には1以上の数値を入力してください。");
-      return;
-    }
-    if(!dangerRaw || isNaN(danger) || danger <= 0){
-      notifyError("警告の閾値には1以上の数値を入力してください。");
-      return;
-    }
-    if(warn >= danger){
-      notifyError("注意の閾値は、警告の閾値より小さい値にしてください。");
-      return;
-    }
-
-    project.thresholds = { warning: warn, danger: danger };
-    saveProject(project);
-    renderDashboard(project);
-    showToast("閾値を保存しました。");
+    saveAllSettings("閾値を保存しました。");
   });
 
   /* ===== カテゴリ別予算の設定 ===== */
@@ -2090,16 +2475,26 @@
       const v = Number(input.value);
       if(input.value !== "" && !isNaN(v) && v > 0) sum += v;
     });
-    const rest = project.totalBudget - sum;
+    const budgetInputRaw = document.getElementById("set-budget").value;
+    const currentTotalBudget = (budgetInputRaw !== "" && !isNaN(Number(budgetInputRaw)))
+      ? Number(budgetInputRaw)
+      : project.totalBudget;
+    const rest = currentTotalBudget - sum;
     catBudgetBalanceEl.style.display = "flex";
     catBudgetBalanceEl.classList.toggle("over", rest < 0);
     document.getElementById("cat-budget-sum").textContent = formatYen(sum);
-    document.getElementById("cat-budget-total").textContent = formatYen(project.totalBudget);
+    document.getElementById("cat-budget-total").textContent = formatYen(currentTotalBudget);
     document.getElementById("cat-budget-rest-label").firstChild.textContent = rest < 0 ? "配分超過 " : "未配分 ";
     document.getElementById("cat-budget-rest").textContent = formatYen(Math.abs(rest));
   }
 
   function renderCategoryBudgetSettings(project){
+    // すでに画面上で入力途中の値があれば保持する
+    const draftValues = {};
+    catBudgetSettingsList.querySelectorAll("input").forEach(function(inp){
+      if(inp.dataset.category) draftValues[inp.dataset.category] = inp.value;
+    });
+
     catBudgetSettingsList.innerHTML = "";
     if(project.categories.length === 0){
       catBudgetEmptyHint.style.display = "block";
@@ -2113,7 +2508,9 @@
     project.categories.forEach(function(cat){
       const row = document.createElement("div");
       row.className = "cat-budget-setting-row";
-      const existing = project.categoryBudgets[cat];
+      const existing = Object.prototype.hasOwnProperty.call(draftValues, cat)
+        ? draftValues[cat]
+        : project.categoryBudgets[cat];
 
       row.innerHTML =
         '<span class="cbs-name"></span>' +
@@ -2121,7 +2518,7 @@
       row.querySelector(".cbs-name").textContent = cat;
       const input = row.querySelector("input");
       input.dataset.category = cat;
-      if(existing !== undefined && existing !== null){
+      if(existing !== undefined && existing !== null && existing !== ""){
         input.value = existing;
       }
       input.addEventListener("input", updateCategoryBudgetBalance);
@@ -2131,25 +2528,7 @@
   }
 
   catBudgetSaveBtn.addEventListener("click", function(){
-    const project = loadProject();
-    if(!project) return;
-
-    const inputs = catBudgetSettingsList.querySelectorAll("input");
-    const newBudgets = {};
-    for(const input of inputs){
-      const raw = input.value;
-      if(raw === "") continue;
-      const val = Number(raw);
-      if(isNaN(val) || val < 0){
-        notifyError("カテゴリ別予算には0以上の数値を入力してください。");
-        return;
-      }
-      newBudgets[input.dataset.category] = val;
-    }
-    project.categoryBudgets = newBudgets;
-    saveProject(project);
-    renderDashboard(project);
-    showToast("カテゴリ別予算を保存しました。");
+    saveAllSettings("カテゴリ別予算を保存しました。");
   });
 
   /* ===== ダッシュボード ===== */
@@ -2162,32 +2541,71 @@
   function renderDashboard(project){
     renderDashboardProjectTabs(project);
 
-    const used = project.expenses.reduce((sum, e) => sum + e.amount, 0);
-    const remaining = project.totalBudget - used;
-    const rate = project.totalBudget > 0 ? (used / project.totalBudget) * 100 : 0;
-    const level = getGaugeLevel(rate, project.thresholds);
+    const paidUsed = project.expenses
+      .filter(e => !isPlannedExpense(e))
+      .reduce((sum, e) => sum + e.amount, 0);
+    const plannedUsed = project.expenses
+      .filter(e => isPlannedExpense(e))
+      .reduce((sum, e) => sum + e.amount, 0);
+    const totalUsed = paidUsed + plannedUsed;
+    const hasPlanned = plannedUsed > 0;
+
+    const paidRemaining = project.totalBudget - paidUsed;
+    const totalRemaining = project.totalBudget - totalUsed;
+    const paidRate = project.totalBudget > 0 ? (paidUsed / project.totalBudget) * 100 : 0;
+    const totalRate = project.totalBudget > 0 ? (totalUsed / project.totalBudget) * 100 : 0;
+    const level = getGaugeLevel(totalRate, project.thresholds);
+    const paidLevel = getGaugeLevel(paidRate, project.thresholds);
 
     document.getElementById("sum-total").textContent = formatYen(project.totalBudget);
-    document.getElementById("sum-used").textContent = formatYen(used);
+    document.getElementById("sum-used").textContent = formatYen(paidUsed);
+
+    const usedSubEl = document.getElementById("sum-used-sub");
+    const remSubEl = document.getElementById("sum-remaining-sub");
+    const rateSubEl = document.getElementById("sum-rate-sub");
+    const gaugePlanned = document.getElementById("budget-gauge-planned");
+    const gaugeLabelText = document.getElementById("budget-gauge-label-text");
+
+    if(hasPlanned){
+      usedSubEl.style.display = "block";
+      usedSubEl.textContent = "予定込 " + formatYen(totalUsed) + "（予定 " + formatYen(plannedUsed) + "）";
+      remSubEl.style.display = "block";
+      remSubEl.textContent = "予定差引後 " + formatYen(totalRemaining);
+      rateSubEl.style.display = "block";
+      rateSubEl.textContent = "予定込 " + totalRate.toFixed(1) + "%";
+      gaugeLabelText.textContent = "予算消化率（予定込 " + totalRate.toFixed(1) + "%）";
+    } else {
+      usedSubEl.style.display = "none";
+      remSubEl.style.display = "none";
+      rateSubEl.style.display = "none";
+      gaugeLabelText.textContent = "予算消化率";
+    }
 
     const remainingEl = document.getElementById("sum-remaining");
-    remainingEl.textContent = formatYen(remaining);
-    remainingEl.classList.toggle("danger", remaining < 0);
-    remainingEl.classList.toggle("accent", remaining >= 0);
+    remainingEl.textContent = formatYen(paidRemaining);
+    remainingEl.classList.toggle("danger", paidRemaining < 0 || totalRemaining < 0);
+    remainingEl.classList.toggle("accent", paidRemaining >= 0 && totalRemaining >= 0);
 
     const rateEl = document.getElementById("sum-rate");
-    rateEl.textContent = rate.toFixed(1) + "%";
+    rateEl.textContent = paidRate.toFixed(1) + "%";
     rateEl.classList.remove("accent", "warn", "danger");
-    rateEl.classList.add(level);
+    rateEl.classList.add(paidLevel);
 
     const gaugeFill = document.getElementById("budget-gauge-fill");
-    gaugeFill.style.width = Math.min(rate, 100) + "%";
+    const clampedPaid = Math.min(paidRate, 100);
+    const clampedTotal = Math.min(totalRate, 100);
+    gaugeFill.style.width = clampedPaid + "%";
     gaugeFill.classList.remove("warn", "danger");
-    if(level === "warn") gaugeFill.classList.add("warn");
-    if(level === "danger") gaugeFill.classList.add("danger");
+    if(paidLevel === "warn") gaugeFill.classList.add("warn");
+    if(paidLevel === "danger") gaugeFill.classList.add("danger");
+
+    gaugePlanned.style.width = hasPlanned ? Math.max(0, clampedTotal - clampedPaid) + "%" : "0%";
+    gaugePlanned.classList.remove("warn", "danger");
+    if(level === "warn") gaugePlanned.classList.add("warn");
+    if(level === "danger") gaugePlanned.classList.add("danger");
 
     const gaugePct = document.getElementById("budget-gauge-pct");
-    gaugePct.textContent = rate.toFixed(1) + "%";
+    gaugePct.textContent = paidRate.toFixed(1) + "%";
     gaugePct.classList.remove("accent", "warn", "danger");
     gaugePct.classList.add(level);
 
@@ -2196,20 +2614,21 @@
     if(level === "danger"){
       banner.style.display = "flex";
       banner.classList.add("danger");
-      banner.innerHTML = alertIcon() + '<span>予算消化率が警告閾値（' + project.thresholds.danger + '%）を超えています。支出を見直してください。</span>';
+      banner.innerHTML = alertIcon() + '<span>予算消化率' + (hasPlanned ? '（予定込み）' : '') + 'が警告閾値（' + project.thresholds.danger + '%）を超えています。支出を見直してください。</span>';
     } else if(level === "warn"){
       banner.style.display = "flex";
       banner.classList.add("warn");
-      banner.innerHTML = alertIcon() + '<span>予算消化率が注意閾値（' + project.thresholds.warning + '%）を超えました。今後の支出にご注意ください。</span>';
+      banner.innerHTML = alertIcon() + '<span>予算消化率' + (hasPlanned ? '（予定込み）' : '') + 'が注意閾値（' + project.thresholds.warning + '%）を超えました。今後の支出にご注意ください。</span>';
     } else {
       banner.style.display = "none";
     }
 
-    renderPace(project, used, rate);
+    renderPace(project, totalUsed, totalRate);
     renderCategoryBudgetGauges(project);
     renderPieChart(project);
     renderBarChart(project);
     renderDashboardRecent(project);
+    renderBackupReminder();
   }
 
   function alertIcon(){
@@ -2237,11 +2656,27 @@
 
     let elapsedDays = Math.round((today - start) / 86400000) + 1;
     elapsedDays = Math.max(0, Math.min(elapsedDays, totalDays));
+    const remainingDays = Math.max(0, totalDays - elapsedDays);
+    const remainingBudget = project.totalBudget - used;
     const elapsedRate = (elapsedDays / totalDays) * 100;
 
     document.getElementById("pace-elapsed-pct").textContent = elapsedRate.toFixed(1) + "%";
     document.getElementById("pace-budget-pct").textContent = rate.toFixed(1) + "%";
     document.getElementById("pace-days").textContent = elapsedDays + "日 / " + totalDays + "日";
+
+    // 残り日数と1日あたり使える残予算額
+    const allowanceEl = document.getElementById("pace-remaining-allowance");
+    if(remainingBudget < 0){
+      allowanceEl.textContent = "残り" + remainingDays + "日 / ¥0 /日（予算超過）";
+      allowanceEl.classList.add("danger");
+    } else if(remainingDays > 0){
+      const perRemainingDay = Math.floor(remainingBudget / remainingDays);
+      allowanceEl.textContent = "残り" + remainingDays + "日 / " + formatYen(perRemainingDay) + " /日";
+      allowanceEl.classList.remove("danger");
+    } else {
+      allowanceEl.textContent = "残り0日（残予算 " + formatYen(remainingBudget) + "）";
+      allowanceEl.classList.remove("danger");
+    }
 
     const statusEl = document.getElementById("pace-status");
     const statusText = document.getElementById("pace-status-text");
@@ -2265,6 +2700,17 @@
     // 期間終了後は実績額をそのまま着地額とする
     const isFinished = elapsedDays >= totalDays;
     const forecast = isFinished ? used : perDay * totalDays;
+
+    // 初期段階(経過3日未満かつ期間全体の20%未満)は一時支出による予測暴騰を抑える
+    const isEarlyStage = !isFinished && elapsedDays < 3 && elapsedRate < 20;
+    if(isEarlyStage && used > 0 && used <= project.totalBudget){
+      forecastEl.textContent = "データ蓄積中（参考値: " + formatYen(Math.round(forecast)) + "）";
+      forecastEl.classList.remove("danger");
+      statusEl.classList.add("ok");
+      statusText.textContent = "データ蓄積中（初期段階）";
+      return;
+    }
+
     forecastEl.textContent = formatYen(Math.round(forecast)) + (isFinished ? "（確定）" : "");
     forecastEl.classList.toggle("danger", forecast > project.totalBudget);
 
@@ -2373,19 +2819,26 @@
     emptyEl.style.display = "none";
 
     recent.forEach(function(exp){
+      const planned = isPlannedExpense(exp);
       const item = document.createElement("div");
-      item.className = "expense-item";
+      item.className = "expense-item clickable" + (planned ? " is-planned" : "");
+      item.title = "タップして支出を編集";
       item.innerHTML =
         '<span class="cat-dot"></span>' +
         '<div class="info">' +
-          '<div class="purpose"></div>' +
+          '<div class="purpose"><span class="purpose-text"></span>' +
+            (planned ? '<span class="status-badge planned">予定</span>' : '') +
+          '</div>' +
           '<div class="meta"></div>' +
         '</div>' +
         '<div class="amount num"></div>';
-      item.querySelector(".purpose").textContent = exp.purpose;
+      item.querySelector(".purpose-text").textContent = exp.purpose;
       item.querySelector(".meta").textContent = formatDateShort(exp.date) + " ・ " + exp.category;
       item.querySelector(".amount").textContent = formatYen(exp.amount);
       item.querySelector(".cat-dot").style.background = colorMap[exp.category] || UNCATEGORIZED_COLOR;
+      item.addEventListener("click", function(){
+        openEditModal(exp.id);
+      });
       listEl.appendChild(item);
     });
   }
@@ -2465,12 +2918,14 @@
     ctx.fill();
     ctx.globalCompositeOperation = "source-over";
 
-    // 凡例
+    // 凡例(タップで該当カテゴリの支出一覧へ遷移)
     legendEl.innerHTML = "";
     entries.forEach(function([cat, amount]){
       const pct = ((amount / grandTotal) * 100).toFixed(1);
       const row = document.createElement("div");
-      row.className = "legend-row";
+      row.className = "legend-row clickable";
+      row.dataset.category = cat;
+      row.title = "タップして「" + cat + "」の支出一覧を表示";
       row.innerHTML =
         '<span class="dot" style="background:' + colorFor(cat) + '"></span>' +
         '<span class="lg-name"></span>' +
@@ -2479,6 +2934,12 @@
       row.querySelector(".lg-name").textContent = cat;
       row.querySelector(".lg-amt").textContent = formatYen(amount);
       row.querySelector(".lg-pct").textContent = pct + "%";
+      row.addEventListener("click", function(){
+        expFilterCategory.value = cat;
+        const currentProj = loadProject();
+        if(currentProj) renderExpenseList(currentProj);
+        goToScreen("expenses");
+      });
       legendEl.appendChild(row);
     });
   }
@@ -2515,18 +2976,21 @@
     }
     card.style.display = "block";
 
-    // 期間ごとに集計
+    // 期間ごとに集計(週単位では既存のbuckets[key].labelを上書きしない)
     const buckets = {};
     project.expenses.forEach(function(e){
-      let key, label;
+      let key;
       if(barChartPeriod === "week"){
         key = getISOWeekKey(new Date(e.date + "T00:00:00"));
-        label = getWeekRangeLabel(e.date) + "〜";
       } else {
         key = e.date.slice(0, 7); // YYYY-MM
-        label = Number(key.slice(5,7)) + "月";
       }
-      if(!buckets[key]) buckets[key] = { label: label, total: 0 };
+      if(!buckets[key]){
+        const label = barChartPeriod === "week"
+          ? getWeekRangeLabel(e.date) + "〜"
+          : Number(key.slice(5,7)) + "月";
+        buckets[key] = { label: label, total: 0 };
+      }
       buckets[key].total += e.amount;
     });
 
@@ -2778,11 +3242,11 @@
       notifyError("出力する支出がありません。");
       return;
     }
-    const rows = [["日付", "金額", "用途", "カテゴリ", "メモ"]];
+    const rows = [["日付", "金額", "用途", "カテゴリ", "ステータス", "メモ"]];
     project.expenses.slice()
       .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
       .forEach(function(e){
-        rows.push([e.date, e.amount, e.purpose, e.category, e.memo || ""]);
+        rows.push([e.date, e.amount, e.purpose, e.category, isPlannedExpense(e) ? "予定" : "確定", e.memo || ""]);
       });
     // Excelで文字化けしないようBOM付きUTF-8で出力
     const csv = "\uFEFF" + rows.map(r => r.map(csvCell).join(",")).join("\r\n");
@@ -2790,13 +3254,51 @@
     showToast("CSVを出力しました。");
   });
 
-  document.getElementById("export-json").addEventListener("click", function(){
+  function exportBackupJson(){
     const store = loadStore();
     if(!store) return;
-    const payload = { app: "budgetApp", version: 2, exportedAt: new Date().toISOString(), store: store };
+    const nowIso = new Date().toISOString();
+    store.lastBackupAt = nowIso;
+    store.lastBackupExpenseCount = getTotalExpenseCount(store);
+    saveStore(store);
+
+    const payload = { app: "budgetApp", version: 2, exportedAt: nowIso, store: store };
     downloadFile("budget_backup_" + todayStr() + ".json", JSON.stringify(payload, null, 2), "application/json");
+    renderBackupReminder();
     showToast("バックアップを保存しました。");
-  });
+  }
+
+  document.getElementById("export-json").addEventListener("click", exportBackupJson);
+  document.getElementById("remind-backup-btn").addEventListener("click", exportBackupJson);
+
+  // バックアップリマインド表示判定
+  function renderBackupReminder(){
+    const card = document.getElementById("backup-reminder-card");
+    const descEl = document.getElementById("backup-reminder-desc");
+    if(!card) return;
+    const store = loadStore();
+    if(!store){
+      card.style.display = "none";
+      return;
+    }
+    const totalCount = getTotalExpenseCount(store);
+    const lastBackupAt = store.lastBackupAt ? new Date(store.lastBackupAt).getTime() : 0;
+    const lastBackupCount = Number(store.lastBackupExpenseCount) || 0;
+    const daysSinceBackup = lastBackupAt > 0 ? (Date.now() - lastBackupAt) / 86400000 : Infinity;
+
+    const neverBackedUpOver10 = !store.lastBackupAt && totalCount >= 10;
+    const staleBackupWithNewExpenses = Boolean(store.lastBackupAt) && daysSinceBackup >= 14 && totalCount > lastBackupCount;
+
+    if(neverBackedUpOver10){
+      card.style.display = "flex";
+      descEl.textContent = "記録された支出が " + totalCount + " 件になりました。万が一に備えてバックアップの保存をおすすめします。";
+    } else if(staleBackupWithNewExpenses){
+      card.style.display = "flex";
+      descEl.textContent = "前回のバックアップから " + Math.floor(daysSinceBackup) + " 日が経過しています。最新のデータを保存しておくと安心です。";
+    } else {
+      card.style.display = "none";
+    }
+  }
 
   const importFileInput = document.getElementById("import-json-file");
   document.getElementById("import-json-btn").addEventListener("click", function(){
@@ -2824,7 +3326,8 @@
         amount: Number(e.amount),
         purpose: String(e.purpose || ""),
         category: String(e.category || UNCATEGORIZED),
-        memo: String(e.memo || "")
+        memo: String(e.memo || ""),
+        status: e.status === "planned" ? "planned" : "paid"
       })) : []
     };
   }
@@ -2845,7 +3348,13 @@
         if(!ok) return;
 
         const currentId = projects.some(p => p.id === rawStore.currentProjectId) ? rawStore.currentProjectId : projects[0].id;
-        saveStore({ projects: projects, currentProjectId: currentId });
+        const restoredStore = {
+          projects: projects,
+          currentProjectId: currentId,
+          lastBackupAt: new Date().toISOString(),
+          lastBackupExpenseCount: getTotalExpenseCount({ projects: projects })
+        };
+        saveStore(restoredStore);
         showMainApp(loadProject());
         goToScreen("dashboard");
         showToast("バックアップから復元しました。");
@@ -2870,11 +3379,14 @@
 
   init();
 
-  /* ===== Service Worker 登録 (PWA対応) ===== */
+  /* ===== Service Worker 登録 (PWA対応・自動更新チェック) ===== */
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('./sw.js?v=2').then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=4', { updateViaCache: 'none' }).then(function(reg){
         console.log('ServiceWorker registered with scope:', reg.scope);
+        document.addEventListener('visibilitychange', function(){
+          if(document.visibilityState === 'visible') reg.update();
+        });
       }).catch(function(err){
         console.warn('ServiceWorker registration failed:', err);
       });

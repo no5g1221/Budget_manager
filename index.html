@@ -6,9 +6,9 @@
 <title>予算管理</title>
 
 <!-- PWA / Web App 設定 -->
-<link rel="manifest" href="manifest.json?v=2">
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json?v=3">
+<link rel="icon" type="image/png" href="favicon.png?v=3">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=3">
 <meta name="theme-color" content="#2D6A4F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -3382,7 +3382,7 @@
   /* ===== Service Worker 登録 (PWA対応・自動更新チェック) ===== */
   if('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('./sw.js?v=4', { updateViaCache: 'none' }).then(function(reg){
+      navigator.serviceWorker.register('./sw.js?v=5', { updateViaCache: 'none' }).then(function(reg){
         console.log('ServiceWorker registered with scope:', reg.scope);
         document.addEventListener('visibilitychange', function(){
           if(document.visibilityState === 'visible') reg.update();
